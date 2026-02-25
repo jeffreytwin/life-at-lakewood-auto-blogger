@@ -369,27 +369,23 @@ function StepBar({ step, prop, kwIndex, totalKws, mob=false }) {
     "Preview & Edit",
     "Review & Publish"
   ];
-  const mobileLabels = ["Keywords","Articles","Writing","Preview","Publish"];
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom: mob ? 20 : 32 }}>
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:32, flexWrap:"wrap" }}>
       {steps.map((s, i) => {
         const done = i < step;
         const active = i === step;
         return (
           <div key={s} style={{ display:"flex", alignItems:"center", flex: i < steps.length-1 ? 1 : "none" }}>
-            <div style={{ display:"flex", alignItems:"center", gap: mob ? 4 : 8, flexShrink:0 }}>
-              <div style={{ width: mob ? 22 : 28, height: mob ? 22 : 28, borderRadius:"50%", background:done?prop.accent:active?prop.color:"#E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", background:done?prop.accent:active?prop.color:"#E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {done
-                  ? <svg width={mob?10:13} height={mob?10:13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  : <span style={{ fontSize: mob ? 9 : 11, fontWeight:800, color:active?"#fff":"#9CA3AF" }}>{i+1}</span>
+                  ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <span style={{ fontSize:11, fontWeight:800, color:active?"#fff":"#9CA3AF" }}>{i+1}</span>
                 }
               </div>
-              {mob
-                ? (active && <span style={{ fontSize:10, fontWeight:700, color:prop.accent, whiteSpace:"nowrap" }}>{mobileLabels[i]}</span>)
-                : <span style={{ fontSize:12, fontWeight:700, color:active?prop.accent:done?prop.accent:"#9CA3AF", whiteSpace:"nowrap" }}>{s}</span>
-              }
+              <span style={{ fontSize: mob ? 9 : 12, fontWeight:700, color:active?prop.accent:done?prop.accent:"#9CA3AF", whiteSpace:"nowrap" }}>{s}</span>
             </div>
-            {i < steps.length-1 && <div style={{ flex:1, height:2, background:done?prop.accent:"#E5E7EB", margin: mob ? "0 3px" : "0 12px", minWidth: mob ? 4 : 20 }} />}
+            {i < steps.length-1 && <div style={{ flex:1, height:2, background:done?prop.accent:"#E5E7EB", margin: mob ? "0 4px" : "0 12px", minWidth: mob ? 8 : 20 }} />}
           </div>
         );
       })}
@@ -429,6 +425,7 @@ Use realistic estimated volume (500–3000) and difficulty (15–45). Intent mus
 }
 
 function StepKeywords({ prop, onNext }) {
+  const mob = useMobile();
   const [scanning, setScanning]     = useState(true);
   const [progress, setProgress]     = useState(0);
   const [selected, setSelected]     = useState(new Set());
@@ -543,7 +540,7 @@ function StepKeywords({ prop, onNext }) {
                     onBlur={()=>setSeedFocused(false)}
                     onKeyDown={e=>e.key==="Enter" && handleLoadMore()}
                     placeholder={`e.g. "new construction, retirement, schools, cost of living"`}
-                    style={{ flex:1, padding:"8px 12px", border:"none", outline:"none", fontSize:16, background:"transparent", color:"#111827" }}
+                    style={{ flex:1, padding:"8px 12px", border:"none", outline:"none", fontSize:12, background:"transparent", color:"#111827" }}
                   />
                 </div>
                 <button
@@ -560,12 +557,14 @@ function StepKeywords({ prop, onNext }) {
             </div>
           </div>
 
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
-            {selected.size > 0 && (
-              <span style={{ fontSize:12, fontWeight:700, color:prop.accent }}>{selected.size} keyword{selected.size>1?"s":""} selected</span>
-            )}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", ...(mob ? { position:"sticky", bottom:0, background:"#fff", borderTop:"1px solid #E5E7EB", padding:"12px 0", zIndex:10 } : {}) }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              {selected.size > 0 && (
+                <span style={{ fontSize:12, fontWeight:700, color:prop.accent }}>{selected.size} keyword{selected.size>1?"s":""} selected</span>
+              )}
+            </div>
             <button onClick={()=>onNext(Array.from(selected))} disabled={selected.size===0}
-              style={{ padding:"11px 28px", background:selected.size>0?prop.color:"#E5E7EB", color:selected.size>0?"#fff":"#9CA3AF", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:selected.size>0?"pointer":"not-allowed", marginLeft:"auto" }}>
+              style={{ padding:"11px 28px", background:selected.size>0?prop.color:"#E5E7EB", color:selected.size>0?"#fff":"#9CA3AF", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:selected.size>0?"pointer":"not-allowed" }}>
               {selected.size>0 ? `Generate Articles for ${selected.size} Keyword${selected.size>1?"s":""}` : "Select Keywords to Continue"} →
             </button>
           </div>
@@ -759,7 +758,7 @@ function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, onConf
                 onBlur={() => setInputFocused(false)}
                 onKeyDown={e => e.key === "Enter" && handleAddKw()}
                 placeholder="e.g. best schools, family neighborhoods…"
-                style={{ flex: 1, padding: "8px 12px", border: "none", outline: "none", fontSize: 16, background: "transparent", color: "#111827" }}
+                style={{ flex: 1, padding: "8px 12px", border: "none", outline: "none", fontSize: 12, background: "transparent", color: "#111827" }}
               />
             </div>
             <button onClick={handleAddKw} disabled={!extraKw.trim()}
@@ -836,7 +835,7 @@ function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, onConf
       )}
 
       {/* Footer nav */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderTop: "1px solid #E5E7EB", position: "sticky", bottom: 0, background: "transparent" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderTop: "1px solid #E5E7EB", position: "sticky", bottom: 0, background: "#fff", zIndex: 10 }}>
         <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", background: "transparent", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#6B7280", cursor: "pointer" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           {kwIndex === 0 ? "Back to Keywords" : "← Previous Keyword"}
@@ -959,6 +958,7 @@ function generateMockArticleContent(article, prop) {
 }
 
 function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
+  const mob = useMobile();
   const [activeIndex, setActiveIndex] = useState(0);
   const [articleContents, setArticleContents] = useState(() =>
     articles.map(a => generateMockArticleContent(a, prop))
@@ -1080,7 +1080,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
 
       {/* Article header */}
       <div style={{ background:"#fff", border:`1px solid ${approvedSet.has(activeIndex)?prop.accent:"#E5E7EB"}`, borderRadius:14, padding:"24px 26px", marginBottom:16 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+        <div style={{ display:"flex", flexDirection: mob ? "column" : "row", justifyContent:"space-between", alignItems: mob ? "stretch" : "flex-start", gap: mob ? 12 : 0, marginBottom:16 }}>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:15, fontWeight:800, color:"#111827", marginBottom:6, lineHeight:1.3 }}>{article.title}</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -1120,10 +1120,10 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
           </div>
           <div>
             <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>URL Slug</label>
-            <div style={{ display:"flex", alignItems:"center", gap:0, fontSize:12, color:"#9CA3AF" }}>
-              <span style={{ padding:"8px 8px 8px 12px", background:"#F3F4F6", border:"1px solid #E5E7EB", borderRight:"none", borderRadius:"8px 0 0 8px", whiteSpace:"nowrap" }}>{prop.blog}/</span>
+            <div style={{ display:"flex", alignItems:"center", gap:0, fontSize:12, color:"#9CA3AF", overflow:"hidden" }}>
+              <span style={{ padding:"8px 8px 8px 12px", background:"#F3F4F6", border:"1px solid #E5E7EB", borderRight:"none", borderRadius:"8px 0 0 8px", whiteSpace:"nowrap", flexShrink:0, fontSize:11, maxWidth: mob ? 110 : "none", overflow:"hidden", textOverflow:"ellipsis" }}>{prop.blog}/</span>
               <input value={content.slug} onChange={e => handleMetaEdit("slug", e.target.value)}
-                style={{ flex:1, padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:"0 8px 8px 0", fontSize:16, color:"#111827", outline:"none", background:"#fff" }}
+                style={{ flex:1, minWidth:0, padding:"8px 10px", border:"1px solid #E5E7EB", borderRadius:"0 8px 8px 0", fontSize:16, color:"#111827", outline:"none", background:"#fff" }}
                 onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
             </div>
           </div>
@@ -1134,11 +1134,11 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
         {content.sections.map((sec, si) => (
           <div key={si} style={{ marginBottom:16, borderLeft:`3px solid ${prop.light}`, paddingLeft:16 }}>
             <input value={sec.heading} onChange={e => handleSectionEdit(si, "heading", e.target.value)}
-              style={{ width:"100%", padding:"6px 0", border:"none", borderBottom:"1px solid #F3F4F6", fontSize:16, fontWeight:700, color:"#111827", outline:"none", background:"transparent", marginBottom:8 }}
+              style={{ width:"100%", padding:"6px 0", border:"none", borderBottom:"1px solid #F3F4F6", fontSize:14, fontWeight:700, color:"#111827", outline:"none", background:"transparent", marginBottom:8 }}
               onFocus={e=>e.target.style.borderBottomColor=prop.accent} onBlur={e=>e.target.style.borderBottomColor="#F3F4F6"} />
             <textarea value={sec.body} onChange={e => handleSectionEdit(si, "body", e.target.value)}
               rows={Math.max(4, Math.ceil(sec.body.length / 90))}
-              style={{ width:"100%", padding:"8px 0", border:"none", fontSize:16, color:"#374151", outline:"none", resize:"vertical", lineHeight:1.7, background:"transparent", fontFamily:"inherit" }} />
+              style={{ width:"100%", padding:"8px 0", border:"none", fontSize:13, color:"#374151", outline:"none", resize:"vertical", lineHeight:1.7, background:"transparent", fontFamily:"inherit" }} />
           </div>
         ))}
 
@@ -1155,7 +1155,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
             <textarea value={revisionInput} onChange={e => setRevisionInput(e.target.value)}
               placeholder='e.g. "Make the intro more conversational" or "Add a section about school zoning"'
               rows={2}
-              style={{ flex:1, padding:"8px 12px", border:"1px solid #FDE68A", borderRadius:8, fontSize:16, color:"#111827", outline:"none", resize:"vertical", background:"#fff", fontFamily:"inherit" }}
+              style={{ flex:1, padding:"8px 12px", border:"1px solid #FDE68A", borderRadius:8, fontSize:12, color:"#111827", outline:"none", resize:"vertical", background:"#fff", fontFamily:"inherit" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor="#FDE68A"} />
             <button onClick={handleRequestRevision} disabled={!revisionInput.trim() || revising}
               style={{ padding:"8px 18px", background:revising ? "#E5E7EB" : prop.color, color:revising ? "#9CA3AF" : "#fff", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:revising?"not-allowed":"pointer", whiteSpace:"nowrap", alignSelf:"flex-end" }}>
@@ -1176,7 +1176,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
       </div>
 
       {/* Footer actions */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+      <div style={{ display:"flex", flexDirection: mob ? "column-reverse" : "row", justifyContent:"space-between", alignItems:"center", gap: mob ? 10 : 0, ...(mob ? { position:"sticky", bottom:0, background:"#fff", borderTop:"1px solid #E5E7EB", padding:"12px 0", zIndex:10 } : {}) }}>
         <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 18px", background:"transparent", border:"1px solid #E5E7EB", borderRadius:10, fontSize:13, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Regenerate Articles
@@ -1199,6 +1199,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
 // ─── WORKFLOW STEP 5: REVIEW & PUBLISH ───────────────────────────────────────
 
 function StepReview({ prop, articles, onDone, onGenerateMore }) {
+  const mob = useMobile();
   const [checked, setChecked] = useState({});
 
   // Merge workflow articles with existing drafts for this property
@@ -1269,13 +1270,13 @@ function StepReview({ prop, articles, onDone, onGenerateMore }) {
         })}
       </div>
 
-      <div style={{ display:"flex", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
-        <button onClick={onGenerateMore} style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"11px 24px", background:"transparent", color:prop.accent, border:`1.5px solid ${prop.accent}`, borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer" }}>
+      <div style={{ display:"flex", flexDirection: mob ? "column" : "row", justifyContent:"space-between", gap:10, ...(mob ? { position:"sticky", bottom:0, background:"#fff", borderTop:"1px solid #E5E7EB", padding:"12px 0", zIndex:10 } : {}) }}>
+        <button onClick={onDone} style={{ padding:"11px 28px", background:prop.color, color:"#fff", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer", ...(mob ? { width:"100%", textAlign:"center" } : {}) }}>
+          Back to Dashboard →
+        </button>
+        <button onClick={onGenerateMore} style={{ display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8, padding:"11px 24px", background:"transparent", color:prop.accent, border:`1.5px solid ${prop.accent}`, borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer", ...(mob ? { width:"100%" } : {}) }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Generate More Articles
-        </button>
-        <button onClick={onDone} style={{ padding:"11px 28px", background:prop.color, color:"#fff", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer" }}>
-          Back to Dashboard →
         </button>
       </div>
     </div>
@@ -1339,7 +1340,7 @@ function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="", mob=fa
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back to {prop.short}
         </button>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginLeft:"auto" }}>
           <img src={LOGOS[prop.id]} alt={prop.name} style={{ width:22, height:22, borderRadius:"50%", objectFit:"cover" }} />
           <span style={{ fontSize:13, fontWeight:700, color:prop.color }}>{prop.name}</span>
         </div>
@@ -1853,7 +1854,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
           <div style={{ position:"relative", marginBottom:14 }}>
             <svg style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search by title or keyword…"
-              style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:16, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
+              style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:12, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor=border} />
           </div>
           <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10 }}>
@@ -2057,14 +2058,14 @@ function SignInPage({ onSignIn }) {
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>Email</label>
                   <input value={email} onChange={e=>{ setEmail(e.target.value); setError(""); }} placeholder="you@example.com" type="email"
-                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" }}
+                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" }}
                     onFocus={e=>e.target.style.borderColor="#A855F7"}
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
                 </div>
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>Password</label>
                   <input value={password} onChange={e=>{ setPassword(e.target.value); setError(""); }} placeholder="••••••••" type="password"
-                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" }}
+                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" }}
                     onFocus={e=>e.target.style.borderColor="#A855F7"}
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"}
                     onKeyDown={e=>{ if(e.key==="Enter") handleSubmit(); }} />
@@ -2109,10 +2110,10 @@ function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, 
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
 
-  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" };
+  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
       <div style={{ background:"#fff", borderRadius:18, width:460, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -2273,7 +2274,7 @@ export default function App() {
 
       {showAccount && <AccountModal user={user} onUpdate={u=>setUser(u)} goals={goals} setGoals={setGoals} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={()=>setUser(null)} />}
 
-      {/* Mobile hamburger - removed, now rendered inside main content */}
+
 
       {/* Sidebar overlay */}
       {mob && sidebarOpen && (
@@ -2307,7 +2308,7 @@ export default function App() {
         {/* Bottom bar: avatar + Account button, then APIs */}
         <div style={{ padding:"12px 16px", borderTop:"1px solid #182431" }}>
           {/* Avatar + Account row — clicking either opens Account modal */}
-          <button onClick={()=>{ setSidebarOpen(false); setShowAccount(true); }} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", marginBottom:8, textAlign:"left" }}
+          <button onClick={()=>setShowAccount(true)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", marginBottom:8, textAlign:"left" }}
             onMouseEnter={e=>e.currentTarget.style.background="#141E28"}
             onMouseLeave={e=>e.currentTarget.style.background="transparent"}
           >
@@ -2335,40 +2336,26 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex:1, overflowY:"auto" }}>
-        {/* Mobile top bar */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         {mob && (
-          <div style={{
-            display:"flex", alignItems:"center", justifyContent:"space-between",
-            padding:"10px 12px", background:sidebarBg, borderBottom:"1px solid #182431"
-          }}>
-            <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{
-              width:36, height:36, borderRadius:8,
-              background:"transparent", border:"1px solid #2E4155", color:"#ECF2F8", display:"flex",
-              alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18
-            }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", background:sidebarBg, borderBottom:"1px solid #182431", flexShrink:0, zIndex:50 }}>
+            <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{ width:36, height:36, borderRadius:8, background:"transparent", border:"1px solid #182431", color:"#ECF2F8", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18 }}>
               {sidebarOpen ? "✕" : "☰"}
             </button>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ fontSize:11, fontWeight:800, color:"#ECF2F8", lineHeight:1.2 }}>Life At Lakewood</div>
-              <div style={{ fontSize:8, fontWeight:700, color:"#A855F7" }}>Auto-Blogger</div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:11, fontWeight:800, color:"#ECF2F8" }}>Life At Lakewood</span>
+              <div style={{ width:28, height:28, borderRadius:"50%", overflow:"hidden", border:"2px solid #2E4155", background:"#1C2E3E", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }} onClick={()=>setShowAccount(true)}>
+                {user.avatar ? <img src={user.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:10, fontWeight:800, color:"#ECF2F8" }}>{user.name.charAt(0)}</span>}
+              </div>
             </div>
-            <button onClick={()=>{ setSidebarOpen(false); setShowAccount(true); }} style={{
-              width:36, height:36, borderRadius:8,
-              background:"transparent", border:"1px solid #2E4155", color:"#ECF2F8", display:"flex",
-              alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:14
-            }}>
-              {user.avatar
-                ? <img src={user.avatar} alt={user.name} style={{ width:24, height:24, borderRadius:"50%", objectFit:"cover" }} />
-                : <span style={{ fontSize:13, fontWeight:800 }}>{user.name.charAt(0).toUpperCase()}</span>
-              }
-            </button>
           </div>
         )}
+        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
         {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { /* find prop for this article */ const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
         {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
         {activeProp && isWorkflow  && <WorkflowView prop={activeProp} onBack={goBack} dm={dm} bg={bg} viewStr={view} mob={mob} />}
+        </div>
       </div>
     </div>
   );
