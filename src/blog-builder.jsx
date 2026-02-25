@@ -361,7 +361,7 @@ function PropBtn({ prop, active, onClick }) {
 
 // ─── STEP INDICATOR ──────────────────────────────────────────────────────────
 
-function StepBar({ step, prop, kwIndex, totalKws }) {
+function StepBar({ step, prop, kwIndex, totalKws, mob=false }) {
   const steps = [
     "Keywords",
     totalKws > 1 ? `Articles (${Math.min((kwIndex||0)+1, totalKws)}/${totalKws})` : "Select Article",
@@ -383,9 +383,9 @@ function StepBar({ step, prop, kwIndex, totalKws }) {
                   : <span style={{ fontSize:11, fontWeight:800, color:active?"#fff":"#9CA3AF" }}>{i+1}</span>
                 }
               </div>
-              <span style={{ fontSize:12, fontWeight:700, color:active?prop.accent:done?prop.accent:"#9CA3AF", whiteSpace:"nowrap" }}>{s}</span>
+              <span style={{ fontSize: mob ? 9 : 12, fontWeight:700, color:active?prop.accent:done?prop.accent:"#9CA3AF", whiteSpace:"nowrap" }}>{s}</span>
             </div>
-            {i < steps.length-1 && <div style={{ flex:1, height:2, background:done?prop.accent:"#E5E7EB", margin:"0 12px", minWidth:20 }} />}
+            {i < steps.length-1 && <div style={{ flex:1, height:2, background:done?prop.accent:"#E5E7EB", margin: mob ? "0 4px" : "0 12px", minWidth: mob ? 8 : 20 }} />}
           </div>
         );
       })}
@@ -1335,7 +1335,7 @@ function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="", mob=fa
   return (
     <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:900 }}>
       {/* Back button + property label */}
-      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
+      <div style={{ display:"flex", alignItems:"center", gap: mob ? 8 : 12, marginBottom: mob ? 20 : 28, flexWrap:"wrap" }}>
         <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, fontSize:12, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back to {prop.short}
@@ -1346,7 +1346,7 @@ function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="", mob=fa
         </div>
       </div>
 
-      <StepBar step={stepBarStep} prop={prop} kwIndex={kwPageIndex} totalKws={selectedKeywords.length} />
+      <StepBar step={stepBarStep} prop={prop} kwIndex={kwPageIndex} totalKws={selectedKeywords.length} mob={mob} />
 
       {step === 0 && <StepKeywords prop={prop} onNext={handleKeywordsNext} />}
 
@@ -1405,7 +1405,6 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
   const todayNum = isCurrentMonth ? TODAY : -1;
 
   const filtered = filter === "all" ? ARTICLES : ARTICLES.filter(a => a.p === filter);
-  // For months other than Feb, show no articles (data only exists for Feb)
   const monthArts = isCurrentMonth ? filtered : [];
   const dayMap = {};
   monthArts.forEach(a => { if(!dayMap[a.day]) dayMap[a.day]=[]; dayMap[a.day].push(a); });
@@ -1417,6 +1416,7 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
   for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
 
   const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const DOW_SHORT = ["S","M","T","W","T","F","S"];
   const selArts = selDay ? (dayMap[selDay]||[]) : [];
 
   const base = isCurrentMonth ? (filter === "all" ? ARTICLES.filter(a => a.status !== "in_wix") : ARTICLES.filter(a => a.p === filter && a.status !== "in_wix")) : [];
@@ -1424,32 +1424,36 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
   const sched = base.filter(a=>a.status==="scheduled").length;
   const total = base.length;
 
+  // --- Mobile agenda: all articles sorted by day ---
+  const agendaArts = isCurrentMonth
+    ? (filter === "all" ? ARTICLES : ARTICLES.filter(a => a.p === filter)).slice().sort((a,b)=>a.day-b.day)
+    : [];
+
   return (
-    <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1200 }}>
+    <div style={{ padding: mob ? "16px 12px" : "36px 44px", maxWidth:1400 }}>
       {/* Header row */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap: mob ? "wrap" : "nowrap", gap: mob ? 12 : 0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-          {/* Month nav */}
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: mob ? 16 : 20, flexWrap:"wrap", gap: mob ? 10 : 0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap: mob ? 10 : 16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap: mob ? 6 : 8 }}>
             <button onClick={()=>{ setMonthIdx(i=>Math.max(0,i-1)); setSelDay(null); }} disabled={monthIdx===0}
-              style={{ width:30, height:30, borderRadius:8, border:"1px solid #E5E7EB", background: monthIdx===0?"#F9FAFB":"#fff", cursor:monthIdx===0?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", color: monthIdx===0?"#D1D5DB":"#374151" }}>
+              style={{ width: mob ? 32 : 30, height: mob ? 32 : 30, borderRadius:8, border:"1px solid #E5E7EB", background:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#374151", opacity:monthIdx===0?0.3:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-            <div style={{ textAlign:"center", minWidth:140 }}>
-              <p style={{ fontSize:11, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", color:"#9CA3AF", margin:"0 0 2px" }}>Content Calendar</p>
-              <h1 style={{ fontSize:26, fontWeight:800, color:dm?"#F3F4F6":"#111827", fontFamily:"'Inter','DM Sans',system-ui,sans-serif", margin:0, lineHeight:1 }}>{mName} {mYear}</h1>
+            <div style={{ textAlign:"center", minWidth: mob ? 110 : 140 }}>
+              <p style={{ fontSize: mob ? 9 : 11, fontWeight:700, letterSpacing:"0.16em", textTransform:"uppercase", color:"#9CA3AF", margin:"0 0 2px" }}>Content Calendar</p>
+              <h1 style={{ fontSize: mob ? 20 : 26, fontWeight:800, color:dm?"#F3F4F6":"#111827", fontFamily:"'Inter','DM Sans',system-ui,sans-serif", margin:0, lineHeight:1 }}>{mName} {mYear}</h1>
             </div>
             <button onClick={()=>{ setMonthIdx(i=>Math.min(MONTH_DATA.length-1,i+1)); setSelDay(null); }} disabled={monthIdx===MONTH_DATA.length-1}
-              style={{ width:30, height:30, borderRadius:8, border:"1px solid #E5E7EB", background: monthIdx===MONTH_DATA.length-1?"#F9FAFB":"#fff", cursor:monthIdx===MONTH_DATA.length-1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", color: monthIdx===MONTH_DATA.length-1?"#D1D5DB":"#374151" }}>
+              style={{ width: mob ? 32 : 30, height: mob ? 32 : 30, borderRadius:8, border:"1px solid #E5E7EB", background:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#374151", opacity:monthIdx===MONTH_DATA.length-1?0.3:1 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
         </div>
         {/* Site filter */}
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-          {[{id:"all",label:"All Sites",color:"#374151"}, ...Object.values(PROPS).map(p=>({id:p.id,label:p.short,color:p.accent}))].map(f=>(
+        <div style={{ display:"flex", gap: mob ? 4 : 6, flexWrap:"wrap" }}>
+          {[{id:"all",label:"All Sites",color:"#374151"}, ...Object.values(PROPS).map(p=>({id:p.id,label: mob ? p.short.split(" ")[0] : p.short,color:p.accent}))].map(f=>(
             <button key={f.id} onClick={()=>{ setFilter(f.id); setSelDay(null); }}
-              style={{ padding:"6px 13px", borderRadius:8, border:`1.5px solid ${filter===f.id?f.color:"#E5E7EB"}`, background:filter===f.id?f.color+"18":"#fff", color:filter===f.id?f.color:"#6B7280", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+              style={{ padding: mob ? "5px 8px" : "6px 12px", borderRadius:20, fontSize: mob ? 10 : 11, fontWeight:700, cursor:"pointer", border:"none", background:filter===f.id?f.color:"#F3F4F6", color:filter===f.id?"#fff":"#6B7280" }}>
               {f.label}
             </button>
           ))}
@@ -1457,146 +1461,156 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
       </div>
 
       {/* Summary pills */}
-      <div style={{ display:"flex", gap:10, marginBottom:22 }}>
+      <div style={{ display:"flex", gap: mob ? 6 : 10, marginBottom: mob ? 14 : 22, flexWrap:"wrap" }}>
         {[
           { label:`${pub} Published`,      ...SM.published },
           { label:`${sched} Scheduled`,    ...SM.scheduled  },
           { label:`${total} Total`,        dot:"#8B5CF6", bg:"#F5F3FF", tx:"#6D28D9" },
         ].map(item=>(
-          <div key={item.label} style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 12px", background:item.bg, borderRadius:20, fontSize:12, fontWeight:700, color:item.tx }}>
+          <div key={item.label} style={{ display:"flex", alignItems:"center", gap:6, padding: mob ? "4px 10px" : "5px 12px", background:item.bg, borderRadius:20, fontSize: mob ? 11 : 12, fontWeight:700, color:item.tx }}>
             <span style={{ width:6, height:6, borderRadius:"50%", background:item.dot }} />
             {item.label}
           </div>
         ))}
         {!isCurrentMonth && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 12px", background:"#F3F4F6", borderRadius:20, fontSize:12, color:"#9CA3AF" }}>
-            📭 No article data for this month yet
+          <div style={{ display:"flex", alignItems:"center", gap:6, padding: mob ? "4px 10px" : "5px 12px", background:"#F3F4F6", borderRadius:20, fontSize: mob ? 11 : 12, color:"#9CA3AF" }}>
+            No article data for this month yet
           </div>
         )}
       </div>
 
-      <div style={{ display:"flex", flexDirection: mob ? "column" : "row", gap: mob ? 16 : 20 }}>
-        {/* Calendar grid */}
-        <div style={{ flex:1, overflowX: mob ? "auto" : "visible" }}>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:5, marginBottom:5 }}>
-            {DOW.map(d=><div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"#9CA3AF", padding:"3px 0" }}>{d}</div>)}
-          </div>
-          {weeks.map((week,wi)=>(
-            <div key={wi} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:5, marginBottom:5 }}>
-              {week.map((day,di)=>{
-                if(!day) return <div key={"e"+wi+di} style={{ minHeight:90 }} />;
-                const arts = dayMap[day]||[];
-                const isToday = day===todayNum;
-                const isPast  = isCurrentMonth ? day < TODAY : false;
-                const isSel   = selDay===day;
-                return (
-                  <div key={day} onClick={()=>setSelDay(isSel?null:day)}
-                    style={{ minHeight:90, borderRadius:10, padding:"8px 7px 6px", border:`2px solid ${isSel?"#111827":isToday?"#374151":"#E5E7EB"}`, background:isSel?"#111827":"#fff", cursor:"pointer", opacity:isPast&&!isToday?0.72:1, transition:"border-color 0.13s" }}
-                    onMouseEnter={e=>{ if(!isSel) e.currentTarget.style.borderColor="#9CA3AF"; }}
-                    onMouseLeave={e=>{ if(!isSel) e.currentTarget.style.borderColor=isToday?"#374151":"#E5E7EB"; }}
-                  >
-                    <div style={{ fontSize:13, fontWeight:800, marginBottom:5, display:"flex", alignItems:"center", gap:4, color:isSel?"#fff":isToday?"#111827":isPast?"#9CA3AF":"#374151" }}>
-                      {isToday && !isSel && <span style={{ width:6, height:6, borderRadius:"50%", background:"#EF4444", display:"inline-block" }} />}
-                      {day}
-                    </div>
-                    <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
-                      {arts.slice(0,2).map(a=>{ const pr=PROPS[a.p]; const sm=SM[a.status];
-                        return (
-                          <div key={a.id} style={{ borderRadius:5, padding:"3px 5px", background:isSel?"rgba(255,255,255,0.14)":pr.light, display:"flex", alignItems:"center", gap:4 }}>
-                            <span style={{ width:5, height:5, borderRadius:"50%", background:isSel?"#fff":sm.dot, flexShrink:0 }} />
-                            <span style={{ fontSize:9, fontWeight:700, color:isSel?"#fff":pr.color, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{pr.short}</span>
-                          </div>
-                        );
-                      })}
-                      {arts.length>2 && <div style={{ fontSize:9, color:isSel?"rgba(255,255,255,0.5)":"#9CA3AF", fontWeight:700, paddingLeft:2 }}>+{arts.length-2} more</div>}
-                    </div>
-                  </div>
-                );
-              })}
+      {mob ? (
+        /* ====== MOBILE: Compact calendar + agenda list ====== */
+        <div>
+          {/* Compact mini-calendar */}
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"14px 10px", marginBottom:16 }}>
+            {/* Day of week headers */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:6 }}>
+              {DOW_SHORT.map((d,i)=><div key={d+i} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"#9CA3AF", padding:"2px 0" }}>{d}</div>)}
             </div>
-          ))}
-        </div>
-
-        {/* Right panel */}
-        <div style={{ width: mob ? "100%" : 280, flexShrink:0, display:"flex", flexDirection:"column", gap:14 }}>
-          {/* Day detail card */}
-          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", minHeight:180 }}>
-            {selDay && selArts.length > 0 ? (
-              <>
-                <div style={{ padding:"14px 18px", background:"#F9FAFB", borderBottom:"1px solid #F3F4F6" }}>
-                  <div style={{ fontSize:18, fontWeight:800, color:"#111827", fontFamily:"'Inter','DM Sans',system-ui,sans-serif" }}>{mName} {selDay}</div>
-                  <div style={{ fontSize:12, color:"#6B7280" }}>{selArts.length} article{selArts.length>1?"s":""}</div>
-                </div>
-                {selArts.map((a,i)=>{
-                  const pr=PROPS[a.p];
+            {/* Week rows */}
+            {weeks.map((week,wi)=>(
+              <div key={wi} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:2 }}>
+                {week.map((day,di)=>{
+                  if(!day) return <div key={"e"+wi+di} style={{ minHeight:40 }} />;
+                  const arts = dayMap[day]||[];
+                  const isToday = day===todayNum;
+                  const isSel   = selDay===day;
+                  const isPast  = isCurrentMonth ? day < TODAY : false;
                   return (
-                    <div key={a.id} style={{ padding:"13px 18px", borderBottom:i<selArts.length-1?"1px solid #F3F4F6":"none" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
-                        <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:16, height:16, borderRadius:"50%", objectFit:"cover" }} />
-                        <span style={{ fontSize:11, fontWeight:700, color:pr.color }}>{pr.short}</span>
-                        <Pill status={a.status} />
+                    <div key={day} onClick={()=>setSelDay(isSel?null:day)}
+                      style={{
+                        minHeight:40, borderRadius:8, padding:"4px 2px",
+                        border: isSel ? "2px solid #111827" : isToday ? "2px solid #374151" : "2px solid transparent",
+                        background: isSel ? "#111827" : "#FAFAFA",
+                        cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                        opacity: isPast && !isToday ? 0.5 : 1
+                      }}>
+                      <div style={{ fontSize:13, fontWeight:700, color: isSel ? "#fff" : isToday ? "#111827" : isPast ? "#9CA3AF" : "#374151", lineHeight:1, marginBottom: arts.length > 0 ? 3 : 0 }}>
+                        {day}
                       </div>
-                      <div style={{ fontSize:13, fontWeight:700, color:"#111827", lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
-                      <div style={{ fontSize:11, color:"#9CA3AF", marginBottom:8 }}>🎯 {a.kw}</div>
-                      {/* Action buttons by status */}
-                      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                        {a.status === "published" && (
-                          <a href={"https://"+pr.blog+"/"+a.title.toLowerCase().replace(/\s+/g,"-")} target="_blank" rel="noreferrer"
-                            style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11, fontWeight:700, color:pr.color, background:pr.light, padding:"5px 10px", borderRadius:6, textDecoration:"none" }}>
-                            View Article ↗
-                          </a>
-                        )}
-                        {a.status === "scheduled" && (
-                          <a href={pr.wixDash} target="_blank" rel="noreferrer"
-                            style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11, fontWeight:700, color:pr.color, background:pr.light, padding:"5px 10px", borderRadius:6, textDecoration:"none" }}>
-                            View Scheduled →
-                          </a>
-                        )}
-                        {a.status === "in_wix" && (
-                          <>
-                            <a href={pr.wixDash} target="_blank" rel="noreferrer"
-                              style={{ display:"inline-flex", alignItems:"center", gap:5, fontSize:11, fontWeight:700, color:pr.color, background:pr.light, padding:"5px 10px", borderRadius:6, textDecoration:"none" }}>
-                              Open in Wix →
-                            </a>
-                            <button onClick={()=>onReviewChecklist && onReviewChecklist(a.id)}
-                              style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:700, color:"#374151", background:"#F3F4F6", padding:"5px 10px", borderRadius:6, border:"none", cursor:"pointer" }}>
-                              ✅ Review Checklist
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      {arts.length > 0 && (
+                        <div style={{ display:"flex", gap:2, justifyContent:"center", flexWrap:"wrap" }}>
+                          {arts.slice(0,3).map(a => {
+                            const sm = SM[a.status];
+                            return <span key={a.id} style={{ width:5, height:5, borderRadius:"50%", background: isSel ? "#fff" : sm.dot }} />;
+                          })}
+                          {arts.length > 3 && <span style={{ fontSize:7, color: isSel ? "rgba(255,255,255,0.5)" : "#9CA3AF", fontWeight:700 }}>+</span>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
-              </>
-            ) : (
-              <div style={{ padding:"32px 22px", textAlign:"center" }}>
-                <div style={{ fontSize:28, marginBottom:8 }}>📅</div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#6B7280", marginBottom:6 }}>
-                  {selDay ? "No articles this day" : "Click any day to see details"}
-                </div>
-                <div style={{ fontSize:11, color:"#9CA3AF", lineHeight:1.5 }}>
-                  {isCurrentMonth ? "Nothing to see here just yet" : "Navigate to a future month to plan ahead."}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Status legend */}
-          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"14px 18px" }}>
-            <div style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:10 }}>Status Legend</div>
-            {Object.entries(SM).filter(([k])=>k!=="in_wix").map(([k,m])=>(
-              <div key={k} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:m.dot, flexShrink:0 }} />
-                <span style={{ fontSize:12, color:"#374151", fontWeight:600 }}>{m.label}</span>
               </div>
             ))}
           </div>
 
-          {/* Articles Scheduled or Published This Month — goal progress */}
-          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"14px 18px" }}>
+          {/* Selected day detail or agenda */}
+          {selDay ? (
+            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", marginBottom:16 }}>
+              <div style={{ padding:"14px 16px", background:"#F9FAFB", borderBottom:"1px solid #F3F4F6" }}>
+                <div style={{ fontSize:17, fontWeight:800, color:"#111827" }}>{mName} {selDay}</div>
+                <div style={{ fontSize:12, color:"#6B7280" }}>{selArts.length} article{selArts.length!==1?"s":""}</div>
+              </div>
+              {selArts.length > 0 ? selArts.map((a,i)=>{
+                const pr=PROPS[a.p];
+                return (
+                  <div key={a.id} style={{ padding:"14px 16px", borderBottom:i<selArts.length-1?"1px solid #F3F4F6":"none" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6 }}>
+                      <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:18, height:18, borderRadius:"50%", objectFit:"cover" }} />
+                      <span style={{ fontSize:12, fontWeight:700, color:pr.color }}>{pr.short}</span>
+                      <Pill status={a.status} />
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#111827", lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
+                    <div style={{ fontSize:12, color:"#9CA3AF", marginBottom:10 }}>{a.kw}</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                      {a.status === "published" && (
+                        <a href={"https://"+pr.blog+"/"+a.title.toLowerCase().replace(/\s+/g,"-")} target="_blank" rel="noreferrer"
+                          style={{ fontSize:12, fontWeight:700, color:pr.accent, textDecoration:"none" }}>
+                          View Article
+                        </a>
+                      )}
+                      {a.status === "scheduled" && (
+                        <a href={pr.wixDash} target="_blank" rel="noreferrer"
+                          style={{ fontSize:12, fontWeight:700, color:pr.accent, textDecoration:"none" }}>
+                          View Scheduled
+                        </a>
+                      )}
+                      {a.status === "in_wix" && (
+                        <>
+                          <a href={pr.wixDash} target="_blank" rel="noreferrer"
+                            style={{ fontSize:12, fontWeight:700, color:pr.accent, textDecoration:"none" }}>
+                            Open in Wix
+                          </a>
+                          <button onClick={()=>onReviewChecklist && onReviewChecklist(a.id)}
+                            style={{ fontSize:12, fontWeight:700, color:"#22C55E", background:"none", border:"none", cursor:"pointer", padding:0 }}>
+                            Review Checklist
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div style={{ padding:"24px 16px", textAlign:"center" }}>
+                  <div style={{ fontSize:13, color:"#9CA3AF" }}>No articles on this day</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Agenda list - all articles this month */
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:10, paddingLeft:4 }}>
+                {isCurrentMonth ? "This Month's Articles" : "No data for this month"}
+              </div>
+              {agendaArts.length > 0 ? agendaArts.map(a => {
+                const pr = PROPS[a.p];
+                return (
+                  <div key={a.id} onClick={()=>setSelDay(a.day)} style={{ display:"flex", gap:12, alignItems:"flex-start", padding:"12px 14px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:12, marginBottom:8, cursor:"pointer" }}>
+                    <div style={{ width:38, height:38, borderRadius:10, background:pr.light, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <span style={{ fontSize:14, fontWeight:800, color:pr.color }}>{a.day}</span>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:pr.color }}>{pr.short}</span>
+                        <Pill status={a.status} />
+                      </div>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#111827", lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a.title}</div>
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div style={{ padding:"20px", textAlign:"center", color:"#9CA3AF", fontSize:13 }}>
+                  Tap a day above to see details, or navigate to a month with data.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Goals progress - mobile */}
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"16px" }}>
             <div style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
-              Articles Scheduled or Published This Month
+              Monthly Goals
             </div>
             {Object.values(PROPS).map(pr=>{
               const done = ARTICLES.filter(a=>a.p===pr.id && (a.status==="published"||a.status==="scheduled")).length;
@@ -1605,22 +1619,168 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
               const over = done >= goal;
               return (
                 <div key={pr.id} style={{ marginBottom:12 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
-                    <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:18, height:18, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+                    <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:20, height:20, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
                     <span style={{ fontSize:12, fontWeight:700, color:"#111827", flex:1 }}>{pr.short}</span>
-                    <span style={{ fontSize:11, fontWeight:800, color: over ? "#22C55E" : pr.color }}>{done}/{goal}</span>
+                    <span style={{ fontSize:12, fontWeight:800, color: over ? "#22C55E" : pr.color }}>{done}/{goal}</span>
                   </div>
-                  <div style={{ height:5, background:"#F3F4F6", borderRadius:3, overflow:"hidden" }}>
+                  <div style={{ height:6, background:"#F3F4F6", borderRadius:3, overflow:"hidden" }}>
                     <div style={{ width:`${pct}%`, height:"100%", background: over ? "#22C55E" : pr.accent, borderRadius:3, transition:"width 0.3s" }} />
                   </div>
-                  {over && <div style={{ fontSize:9, color:"#22C55E", fontWeight:700, marginTop:3 }}>✓ Goal reached!</div>}
+                  {over && <div style={{ fontSize:10, color:"#22C55E", fontWeight:700, marginTop:3 }}>Goal reached!</div>}
                 </div>
               );
             })}
-            <div style={{ fontSize:10, color:"#D1D5DB", marginTop:4 }}>Goals set in Account → Monthly Goals</div>
           </div>
         </div>
-      </div>
+      ) : (
+        /* ====== DESKTOP: Full calendar grid + right panel ====== */
+        <div style={{ display:"flex", gap:24 }}>
+          {/* Calendar grid */}
+          <div style={{ flex:1 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6, marginBottom:6 }}>
+              {DOW.map(d=><div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"#9CA3AF", padding:"4px 0" }}>{d}</div>)}
+            </div>
+            {weeks.map((week,wi)=>(
+              <div key={wi} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6, marginBottom:6 }}>
+                {week.map((day,di)=>{
+                  if(!day) return <div key={"e"+wi+di} style={{ minHeight:110 }} />;
+                  const arts = dayMap[day]||[];
+                  const isToday = day===todayNum;
+                  const isPast  = isCurrentMonth ? day < TODAY : false;
+                  const isSel   = selDay===day;
+                  return (
+                    <div key={day} onClick={()=>setSelDay(isSel?null:day)}
+                      style={{ minHeight:110, borderRadius:10, padding:"10px 9px 8px", border:`2px solid ${isSel?"#111827":isToday?"#374151":"#E5E7EB"}`, background:isSel?"#111827":"#fff", cursor:"pointer", opacity:isPast&&!isToday?0.72:1, transition:"border-color 0.13s" }}
+                      onMouseEnter={e=>{ if(!isSel) e.currentTarget.style.borderColor="#9CA3AF"; }}
+                      onMouseLeave={e=>{ if(!isSel) e.currentTarget.style.borderColor=isToday?"#374151":"#E5E7EB"; }}
+                    >
+                      <div style={{ fontSize:14, fontWeight:800, marginBottom:6, display:"flex", alignItems:"center", gap:4, color:isSel?"#fff":isToday?"#111827":isPast?"#9CA3AF":"#374151" }}>
+                        {isToday && !isSel && <span style={{ width:7, height:7, borderRadius:"50%", background:"#EF4444", display:"inline-block" }} />}
+                        {day}
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                        {arts.slice(0,3).map(a=>{ const pr=PROPS[a.p]; const sm=SM[a.status];
+                          return (
+                            <div key={a.id} style={{ borderRadius:6, padding:"4px 6px", background:isSel?"rgba(255,255,255,0.14)":pr.light, display:"flex", alignItems:"center", gap:5 }}>
+                              <span style={{ width:6, height:6, borderRadius:"50%", background:isSel?"#fff":sm.dot, flexShrink:0 }} />
+                              <span style={{ fontSize:10, fontWeight:700, color:isSel?"#fff":pr.color, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{pr.short}</span>
+                            </div>
+                          );
+                        })}
+                        {arts.length>3 && <div style={{ fontSize:10, color:isSel?"rgba(255,255,255,0.5)":"#9CA3AF", fontWeight:700, paddingLeft:2 }}>+{arts.length-3} more</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Right panel */}
+          <div style={{ width:320, flexShrink:0, display:"flex", flexDirection:"column", gap:14 }}>
+            {/* Day detail card */}
+            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", minHeight:200 }}>
+              {selDay && selArts.length > 0 ? (
+                <>
+                  <div style={{ padding:"16px 20px", background:"#F9FAFB", borderBottom:"1px solid #F3F4F6" }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:"#111827", fontFamily:"'Inter','DM Sans',system-ui,sans-serif" }}>{mName} {selDay}</div>
+                    <div style={{ fontSize:12, color:"#6B7280" }}>{selArts.length} article{selArts.length>1?"s":""}</div>
+                  </div>
+                  {selArts.map((a,i)=>{
+                    const pr=PROPS[a.p];
+                    return (
+                      <div key={a.id} style={{ padding:"14px 20px", borderBottom:i<selArts.length-1?"1px solid #F3F4F6":"none" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
+                          <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:18, height:18, borderRadius:"50%", objectFit:"cover" }} />
+                          <span style={{ fontSize:12, fontWeight:700, color:pr.color }}>{pr.short}</span>
+                          <Pill status={a.status} />
+                        </div>
+                        <div style={{ fontSize:14, fontWeight:700, color:"#111827", lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
+                        <div style={{ fontSize:11, color:"#9CA3AF", marginBottom:8 }}>{a.kw}</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                          {a.status === "published" && (
+                            <a href={"https://"+pr.blog+"/"+a.title.toLowerCase().replace(/\s+/g,"-")} target="_blank" rel="noreferrer"
+                              style={{ fontSize:11, fontWeight:700, color:pr.accent, textDecoration:"none", padding:"5px 12px", background:pr.light, borderRadius:6 }}>
+                              View Article
+                            </a>
+                          )}
+                          {a.status === "scheduled" && (
+                            <a href={pr.wixDash} target="_blank" rel="noreferrer"
+                              style={{ fontSize:11, fontWeight:700, color:pr.accent, textDecoration:"none", padding:"5px 12px", background:pr.light, borderRadius:6 }}>
+                              View Scheduled
+                            </a>
+                          )}
+                          {a.status === "in_wix" && (
+                            <>
+                              <a href={pr.wixDash} target="_blank" rel="noreferrer"
+                                style={{ fontSize:11, fontWeight:700, color:pr.accent, textDecoration:"none", padding:"5px 12px", background:pr.light, borderRadius:6 }}>
+                                Open in Wix
+                              </a>
+                              <button onClick={()=>onReviewChecklist && onReviewChecklist(a.id)}
+                                style={{ fontSize:11, fontWeight:700, color:"#22C55E", background:"#F0FDF4", border:"none", cursor:"pointer", padding:"5px 12px", borderRadius:6 }}>
+                                Review Checklist
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <div style={{ padding:"36px 24px", textAlign:"center" }}>
+                  <div style={{ fontSize:32, marginBottom:10 }}>📅</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:"#6B7280", marginBottom:6 }}>
+                    {selDay ? "No articles this day" : "Click any day to see details"}
+                  </div>
+                  <div style={{ fontSize:12, color:"#9CA3AF", lineHeight:1.5 }}>
+                    {isCurrentMonth ? "Select a highlighted day to view scheduled content" : "Navigate to a future month to plan ahead."}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Status legend */}
+            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"16px 20px" }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:10 }}>Status Legend</div>
+              {Object.entries(SM).filter(([k])=>k!=="in_wix").map(([k,m])=>(
+                <div key={k} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:m.dot, flexShrink:0 }} />
+                  <span style={{ fontSize:12, color:"#374151", fontWeight:600 }}>{m.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Articles goal progress */}
+            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"16px 20px" }}>
+              <div style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
+                Monthly Goals
+              </div>
+              {Object.values(PROPS).map(pr=>{
+                const done = ARTICLES.filter(a=>a.p===pr.id && (a.status==="published"||a.status==="scheduled")).length;
+                const goal = goals[pr.id] || 4;
+                const pct  = Math.min(100, Math.round((done/goal)*100));
+                const over = done >= goal;
+                return (
+                  <div key={pr.id} style={{ marginBottom:12 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:5 }}>
+                      <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:20, height:20, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                      <span style={{ fontSize:12, fontWeight:700, color:"#111827", flex:1 }}>{pr.short}</span>
+                      <span style={{ fontSize:12, fontWeight:800, color: over ? "#22C55E" : pr.color }}>{done}/{goal}</span>
+                    </div>
+                    <div style={{ height:6, background:"#F3F4F6", borderRadius:3, overflow:"hidden" }}>
+                      <div style={{ width:`${pct}%`, height:"100%", background: over ? "#22C55E" : pr.accent, borderRadius:3, transition:"width 0.3s" }} />
+                    </div>
+                    {over && <div style={{ fontSize:10, color:"#22C55E", fontWeight:700, marginTop:3 }}>Goal reached!</div>}
+                  </div>
+                );
+              })}
+              <div style={{ fontSize:10, color:"#D1D5DB", marginTop:4 }}>Goals set in Account → Monthly Goals</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1651,9 +1811,9 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
     <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1100, background:bg, minHeight:"100%", transition:"background 0.3s" }}>
 
       {/* Header */}
-      <div style={{ marginBottom:26 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-          <img src={LOGOS[prop.id]} alt={prop.name} style={{ width:52, height:52, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+      <div style={{ marginBottom: mob ? 20 : 26 }}>
+        <div style={{ display:"flex", alignItems:"center", gap: mob ? 10 : 12, marginBottom:12 }}>
+          <img src={LOGOS[prop.id]} alt={prop.name} style={{ width: mob ? 40 : 52, height: mob ? 40 : 52, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
           <div>
             <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase", color:prop.accent, margin:0 }}>Property Dashboard</p>
             <h1 style={{ fontFamily:"'Inter','DM Sans',system-ui,sans-serif", fontWeight:800, fontSize:18, color:text, margin:0, lineHeight:1.3 }}>{prop.name}</h1>
@@ -1664,7 +1824,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
           <a href={"https://"+prop.blog} target="_blank" rel="noreferrer" style={{ fontSize:12, color:prop.color, textDecoration:"none", background:prop.light, padding:"4px 10px", borderRadius:6, fontWeight:600 }}>✍️ {prop.blog}</a>
         </div>
         <button onClick={() => onStartWorkflow("new")}
-          style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"12px 20px", background:prop.color, color:"#fff", border:"none", borderRadius:12, cursor:"pointer" }}>
+          style={{ display:"inline-flex", alignItems:"center", gap:10, padding: mob ? "14px 18px" : "12px 20px", background:prop.color, color:"#fff", border:"none", borderRadius:12, cursor:"pointer", width: mob ? "100%" : "auto" }}>
           <div style={{ width:28, height:28, borderRadius:7, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>✨</div>
           <div style={{ textAlign:"left" }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:14, fontWeight:700, lineHeight:1 }}>Start New Article</div>
@@ -1675,7 +1835,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* KPIs */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10, marginBottom:22, maxWidth:360 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap: mob ? 8 : 10, marginBottom: mob ? 16 : 22, maxWidth: mob ? "100%" : 360 }}>
         {[
           { label:"Total Posts", value:s.totalPosts, sub:"All time" },
           { label:"Published Feb 2026", value:ARTICLES.filter(a=>a.p===prop.id && a.status==="published").length, sub:"This month" },
@@ -1697,7 +1857,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
               style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:12, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor=border} />
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:10 }}>
+          <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10 }}>
             {filteredArts.filter(a=>a.status==="published"||a.status==="scheduled").length === 0 ? (
               <div style={{ gridColumn:"1/-1", padding:"24px", textAlign:"center", color:muted, fontSize:13 }}>
                 {artSearch ? `No articles match "${artSearch}"` : "No scheduled or published articles yet"}
