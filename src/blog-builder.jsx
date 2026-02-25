@@ -557,7 +557,7 @@ function StepKeywords({ prop, onNext }) {
             </div>
           </div>
 
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", ...(mob ? { position:"sticky", bottom:0, background:"#fff", borderTop:"1px solid #E5E7EB", padding:"12px 0", zIndex:10 } : {}) }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 0" }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               {selected.size > 0 && (
                 <span style={{ fontSize:12, fontWeight:700, color:prop.accent }}>{selected.size} keyword{selected.size>1?"s":""} selected</span>
@@ -835,7 +835,7 @@ function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, onConf
       )}
 
       {/* Footer nav */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderTop: "1px solid #E5E7EB", position: "sticky", bottom: 0, background: "#fff", zIndex: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0" }}>
         <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", background: "transparent", border: "1px solid #E5E7EB", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#6B7280", cursor: "pointer" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           {kwIndex === 0 ? "Back to Keywords" : "← Previous Keyword"}
@@ -1176,7 +1176,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
       </div>
 
       {/* Footer actions */}
-      <div style={{ display:"flex", flexDirection: mob ? "column-reverse" : "row", justifyContent:"space-between", alignItems:"center", gap: mob ? 10 : 0, ...(mob ? { position:"sticky", bottom:0, background:"#fff", borderTop:"1px solid #E5E7EB", padding:"12px 0", zIndex:10 } : {}) }}>
+      <div style={{ display:"flex", flexDirection: mob ? "column-reverse" : "row", justifyContent:"space-between", alignItems:"center", gap: mob ? 10 : 0, padding:"16px 0" }}>
         <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 18px", background:"transparent", border:"1px solid #E5E7EB", borderRadius:10, fontSize:13, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Regenerate Articles
@@ -1270,7 +1270,7 @@ function StepReview({ prop, articles, onDone, onGenerateMore }) {
         })}
       </div>
 
-      <div style={{ display:"flex", flexDirection: mob ? "column" : "row", justifyContent:"space-between", gap:10, ...(mob ? { position:"sticky", bottom:0, background:"#fff", borderTop:"1px solid #E5E7EB", padding:"12px 0", zIndex:10 } : {}) }}>
+      <div style={{ display:"flex", flexDirection: mob ? "column" : "row", justifyContent:"space-between", gap:10, padding:"16px 0" }}>
         <button onClick={onDone} style={{ padding:"11px 28px", background:prop.color, color:"#fff", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer", ...(mob ? { width:"100%", textAlign:"center" } : {}) }}>
           Back to Dashboard →
         </button>
@@ -1808,7 +1808,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
   ];
 
   return (
-    <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1100, background:bg, minHeight:"100%", transition:"background 0.3s" }}>
+    <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1100, background:bg, transition:"background 0.3s" }}>
 
       {/* Header */}
       <div style={{ marginBottom: mob ? 20 : 26 }}>
@@ -2263,7 +2263,7 @@ export default function App() {
   if (!user) return <SignInPage onSignIn={u => setUser(u)} />;
 
   return (
-    <div style={{ minHeight:"100vh", background:bg, fontFamily:"'Inter','DM Sans',system-ui,sans-serif", display:"flex", transition:"background 0.3s" }}>
+    <div style={{ height:"100vh", background:bg, fontFamily:"'Inter','DM Sans',system-ui,sans-serif", display:"flex", transition:"background 0.3s" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing:border-box; }
@@ -2339,7 +2339,7 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", ...(mob ? { minHeight:0 } : { overflow:"hidden" }) }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minHeight:0 }}>
         {mob && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", background:sidebarBg, borderBottom:"1px solid #182431", flexShrink:0, zIndex:50, position:"sticky", top:0 }}>
             <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{ width:36, height:36, borderRadius:8, background:"transparent", border:"1px solid #182431", color:"#ECF2F8", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18 }}>
@@ -2353,7 +2353,7 @@ export default function App() {
             </div>
           </div>
         )}
-        <div style={{ flex:1, ...(mob ? {} : { overflowY:"auto" }), touchAction:"manipulation" }}>
+        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
         {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { /* find prop for this article */ const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
         {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
