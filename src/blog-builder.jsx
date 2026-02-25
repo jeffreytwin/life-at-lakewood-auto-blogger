@@ -1346,7 +1346,7 @@ function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="", mob=fa
         </div>
       </div>
 
-      <StepBar step={stepBarStep} prop={prop} kwIndex={kwPageIndex} totalKws={selectedKeywords.length} mob={mob} />
+      {!mob && <StepBar step={stepBarStep} prop={prop} kwIndex={kwPageIndex} totalKws={selectedKeywords.length} mob={mob} />}
 
       {step === 0 && <StepKeywords prop={prop} onNext={handleKeywordsNext} />}
 
@@ -1651,18 +1651,18 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
                   const isSel   = selDay===day;
                   return (
                     <div key={day} onClick={()=>setSelDay(isSel?null:day)}
-                      style={{ minHeight:110, borderRadius:10, padding:"10px 9px 8px", border:`2px solid ${isSel?"#111827":isToday?"#374151":"#E5E7EB"}`, background:isSel?"#111827":"#fff", cursor:"pointer", opacity:isPast&&!isToday?0.72:1, transition:"border-color 0.13s" }}
-                      onMouseEnter={e=>{ if(!isSel) e.currentTarget.style.borderColor="#9CA3AF"; }}
-                      onMouseLeave={e=>{ if(!isSel) e.currentTarget.style.borderColor=isToday?"#374151":"#E5E7EB"; }}
+                      style={{ minHeight:110, borderRadius:10, padding:"10px 9px 8px", border:`2px solid ${isSel?(dm?"#60A5FA":"#111827"):isToday?(dm?"#64748B":"#374151"):(dm?"#334155":"#E5E7EB")}`, background:isSel?(dm?"#1E3A5F":"#111827"):(dm?"#1E293B":"#fff"), cursor:"pointer", opacity:isPast&&!isToday?0.72:1, transition:"border-color 0.13s" }}
+                      onMouseEnter={e=>{ if(!isSel) e.currentTarget.style.borderColor=dm?"#64748B":"#9CA3AF"; }}
+                      onMouseLeave={e=>{ if(!isSel) e.currentTarget.style.borderColor=isToday?(dm?"#64748B":"#374151"):(dm?"#334155":"#E5E7EB"); }}
                     >
-                      <div style={{ fontSize:14, fontWeight:800, marginBottom:6, display:"flex", alignItems:"center", gap:4, color:isSel?"#fff":isToday?"#111827":isPast?"#9CA3AF":"#374151" }}>
+                      <div style={{ fontSize:14, fontWeight:800, marginBottom:6, display:"flex", alignItems:"center", gap:4, color:isSel?"#fff":isToday?(dm?"#F1F5F9":"#111827"):isPast?(dm?"#64748B":"#9CA3AF"):(dm?"#CBD5E1":"#374151") }}>
                         {isToday && !isSel && <span style={{ width:7, height:7, borderRadius:"50%", background:"#EF4444", display:"inline-block" }} />}
                         {day}
                       </div>
                       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                         {arts.slice(0,3).map(a=>{ const pr=PROPS[a.p]; const sm=SM[a.status];
                           return (
-                            <div key={a.id} style={{ borderRadius:6, padding:"4px 6px", background:isSel?"rgba(255,255,255,0.14)":pr.light, display:"flex", alignItems:"center", gap:5 }}>
+                            <div key={a.id} style={{ borderRadius:6, padding:"4px 6px", background:isSel?"rgba(255,255,255,0.18)":(dm?"rgba(255,255,255,0.08)":pr.light), display:"flex", alignItems:"center", gap:5 }}>
                               <span style={{ width:6, height:6, borderRadius:"50%", background:isSel?"#fff":sm.dot, flexShrink:0 }} />
                               <span style={{ fontSize:10, fontWeight:700, color:isSel?"#fff":pr.color, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{pr.short}</span>
                             </div>
@@ -1680,24 +1680,24 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
           {/* Right panel */}
           <div style={{ width:320, flexShrink:0, display:"flex", flexDirection:"column", gap:14 }}>
             {/* Day detail card */}
-            <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", minHeight:200 }}>
+            <div style={{ background:dm?"#1E293B":"#fff", border:`1px solid ${dm?"#334155":"#E5E7EB"}`, borderRadius:14, overflow:"hidden", minHeight:200 }}>
               {selDay && selArts.length > 0 ? (
                 <>
-                  <div style={{ padding:"16px 20px", background:"#F9FAFB", borderBottom:"1px solid #F3F4F6" }}>
-                    <div style={{ fontSize:20, fontWeight:800, color:"#111827", fontFamily:"'Inter','DM Sans',system-ui,sans-serif" }}>{mName} {selDay}</div>
+                  <div style={{ padding:"16px 20px", background:dm?"#1E293B":"#F9FAFB", borderBottom:`1px solid ${dm?"#334155":"#F3F4F6"}` }}>
+                    <div style={{ fontSize:20, fontWeight:800, color:dm?"#F1F5F9":"#111827", fontFamily:"'Inter','DM Sans',system-ui,sans-serif" }}>{mName} {selDay}</div>
                     <div style={{ fontSize:12, color:"#6B7280" }}>{selArts.length} article{selArts.length>1?"s":""}</div>
                   </div>
                   {selArts.map((a,i)=>{
                     const pr=PROPS[a.p];
                     return (
-                      <div key={a.id} style={{ padding:"14px 20px", borderBottom:i<selArts.length-1?"1px solid #F3F4F6":"none" }}>
+                      <div key={a.id} style={{ padding:"14px 20px", borderBottom:i<selArts.length-1?`1px solid ${dm?"#334155":"#F3F4F6"}`:"none" }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:5 }}>
                           <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:18, height:18, borderRadius:"50%", objectFit:"cover" }} />
                           <span style={{ fontSize:12, fontWeight:700, color:pr.color }}>{pr.short}</span>
                           <Pill status={a.status} />
                         </div>
-                        <div style={{ fontSize:14, fontWeight:700, color:"#111827", lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
-                        <div style={{ fontSize:11, color:"#9CA3AF", marginBottom:8 }}>{a.kw}</div>
+                        <div style={{ fontSize:14, fontWeight:700, color:dm?"#F1F5F9":"#111827", lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
+                        <div style={{ fontSize:11, color:dm?"#94A3B8":"#9CA3AF", marginBottom:8 }}>{a.kw}</div>
                         <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                           {a.status === "published" && (
                             <a href={"https://"+pr.blog+"/"+a.title.toLowerCase().replace(/\s+/g,"-")} target="_blank" rel="noreferrer"
@@ -1843,7 +1843,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* Scheduled & Published Articles + Needs Attention */}
-      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 340px", gap:16, marginBottom:16 }}>
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 340px", gap:16, marginBottom:16, touchAction:"pan-y" }}>
 
         {/* Scheduled and Published articles with search */}
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
@@ -1857,7 +1857,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
               style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:12, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor=border} />
           </div>
-          <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10 }}>
+          <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10, touchAction:"pan-y" }}>
             {filteredArts.filter(a=>a.status==="published"||a.status==="scheduled").length === 0 ? (
               <div style={{ gridColumn:"1/-1", padding:"24px", textAlign:"center", color:muted, fontSize:13 }}>
                 {artSearch ? `No articles match "${artSearch}"` : "No scheduled or published articles yet"}
@@ -1969,7 +1969,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* Top Articles + Recent Activity — now at the bottom */}
-      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16 }}>
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16, touchAction:"pan-y" }}>
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, letterSpacing:"0.04em" }}>🏆 Top Articles (All Time)</div>
@@ -2113,7 +2113,7 @@ function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, 
   const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
       <div style={{ background:"#fff", borderRadius:18, width:460, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -2343,7 +2343,7 @@ export default function App() {
               {sidebarOpen ? "✕" : "☰"}
             </button>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:11, fontWeight:800, color:"#ECF2F8" }}>Life At Lakewood</span>
+              <span style={{ fontSize:11, fontWeight:800, color:"#ECF2F8" }}>{user.name}</span>
               <div style={{ width:28, height:28, borderRadius:"50%", overflow:"hidden", border:"2px solid #2E4155", background:"#1C2E3E", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }} onClick={()=>setShowAccount(true)}>
                 {user.avatar ? <img src={user.avatar} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <span style={{ fontSize:10, fontWeight:800, color:"#ECF2F8" }}>{user.name.charAt(0)}</span>}
               </div>
