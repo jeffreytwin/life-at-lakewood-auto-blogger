@@ -1,5 +1,17 @@
 import { useState, useEffect } from "react";
 
+function useMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < breakpoint : false
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const PROPS = {
   lakewood: { id:"lakewood", name:"Life at Lakewood",    short:"Lakewood Ranch", url:"lifeatlakewood.com",    blog:"lifeatlakewood.com/blog",    color:"#3B0764", accent:"#A855F7", light:"#F3E8FF", wixDash:"https://manage.wix.com/dashboard/4fbabb96-2d6c-4f20-a240-9223153498b5/blog/posts?referralInfo=sidebar" },
   wellen:   { id:"wellen",   name:"Life in Wellen Park", short:"Wellen Park",    url:"lifeinwellenpark.com",  blog:"lifeinwellenpark.com/blog",  color:"#14532D", accent:"#22C55E", light:"#DCFCE7", wixDash:"https://manage.wix.com/dashboard/1a8c2755-823e-4882-ae32-e6c108a30e39/blog/posts?referralInfo=sidebar" },
@@ -358,7 +370,7 @@ function StepBar({ step, prop, kwIndex, totalKws }) {
     "Review & Publish"
   ];
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:32 }}>
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:32, flexWrap:"wrap" }}>
       {steps.map((s, i) => {
         const done = i < step;
         const active = i === step;
@@ -478,7 +490,7 @@ function StepKeywords({ prop, onNext }) {
         </div>
       ) : (
         <>
-          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", marginBottom:12 }}>
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", marginBottom:12, overflowX:"auto" }}>
             <div style={{ display:"grid", gridTemplateColumns:"36px 2fr 1fr 1fr 1fr", padding:"10px 20px", background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.08em", textTransform:"uppercase", alignItems:"center" }}>
               <div>
                 <input type="checkbox" checked={selected.size===keywords.length && keywords.length > 0} onChange={e=>e.target.checked?selectAll():clearAll()}
@@ -1273,7 +1285,7 @@ function StepReview({ prop, articles, onDone, onGenerateMore }) {
 
 // ─── WORKFLOW CONTAINER ───────────────────────────────────────────────────────
 
-function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="" }) {
+function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="", mob=false }) {
   // Detect direct-review entry (from "Needs Attention" button)
   const directReviewMatch = viewStr.match(/__review__(.+)/);
   const directReviewArticleId = directReviewMatch ? directReviewMatch[1] : null;
@@ -1321,7 +1333,7 @@ function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", viewStr="" }) {
   const stepBarStep = step === 1 ? 1 : step;
 
   return (
-    <div style={{ padding:"36px 44px", maxWidth:900 }}>
+    <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:900 }}>
       {/* Back button + property label */}
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:28 }}>
         <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, fontSize:12, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
@@ -1383,7 +1395,7 @@ const MONTH_DATA = [
 ];
 const CURRENT_MONTH_IDX = 1; // February is default
 
-function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewChecklist }) {
+function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewChecklist, mob=false }) {
   const [selDay, setSelDay]     = useState(null);
   const [filter, setFilter]     = useState("all");
   const [monthIdx, setMonthIdx] = useState(CURRENT_MONTH_IDX);
@@ -1413,9 +1425,9 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
   const total = base.length;
 
   return (
-    <div style={{ padding:"36px 44px", maxWidth:1200 }}>
+    <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1200 }}>
       {/* Header row */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap: mob ? "wrap" : "nowrap", gap: mob ? 12 : 0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:16 }}>
           {/* Month nav */}
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -1434,7 +1446,7 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
           </div>
         </div>
         {/* Site filter */}
-        <div style={{ display:"flex", gap:6 }}>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
           {[{id:"all",label:"All Sites",color:"#374151"}, ...Object.values(PROPS).map(p=>({id:p.id,label:p.short,color:p.accent}))].map(f=>(
             <button key={f.id} onClick={()=>{ setFilter(f.id); setSelDay(null); }}
               style={{ padding:"6px 13px", borderRadius:8, border:`1.5px solid ${filter===f.id?f.color:"#E5E7EB"}`, background:filter===f.id?f.color+"18":"#fff", color:filter===f.id?f.color:"#6B7280", fontSize:12, fontWeight:700, cursor:"pointer" }}>
@@ -1463,9 +1475,9 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
         )}
       </div>
 
-      <div style={{ display:"flex", gap:20 }}>
+      <div style={{ display:"flex", flexDirection: mob ? "column" : "row", gap: mob ? 16 : 20 }}>
         {/* Calendar grid */}
-        <div style={{ flex:1 }}>
+        <div style={{ flex:1, overflowX: mob ? "auto" : "visible" }}>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:5, marginBottom:5 }}>
             {DOW.map(d=><div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"#9CA3AF", padding:"3px 0" }}>{d}</div>)}
           </div>
@@ -1506,7 +1518,7 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
         </div>
 
         {/* Right panel */}
-        <div style={{ width:280, flexShrink:0, display:"flex", flexDirection:"column", gap:14 }}>
+        <div style={{ width: mob ? "100%" : 280, flexShrink:0, display:"flex", flexDirection:"column", gap:14 }}>
           {/* Day detail card */}
           <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", minHeight:180 }}>
             {selDay && selArts.length > 0 ? (
@@ -1615,7 +1627,7 @@ function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewC
 
 // ─── PROPERTY DASHBOARD ───────────────────────────────────────────────────────
 
-function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F1ED", card="#fff", border="#E5E7EB", text="#111827", muted="#6B7280" }) {
+function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F1ED", card="#fff", border="#E5E7EB", text="#111827", muted="#6B7280", mob=false }) {
   const s = STATS[prop.id];
   const arts = ARTICLES.filter(a => a.p === prop.id);
   const draftArts = arts.filter(a => a.status === "in_wix");
@@ -1636,7 +1648,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
   ];
 
   return (
-    <div style={{ padding:"36px 44px", maxWidth:1100, background:bg, minHeight:"100%", transition:"background 0.3s" }}>
+    <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1100, background:bg, minHeight:"100%", transition:"background 0.3s" }}>
 
       {/* Header */}
       <div style={{ marginBottom:26 }}>
@@ -1671,7 +1683,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* Scheduled & Published Articles + Needs Attention */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:16, marginBottom:16 }}>
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 340px", gap:16, marginBottom:16 }}>
 
         {/* Scheduled and Published articles with search */}
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
@@ -1797,7 +1809,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* Top Articles + Recent Activity — now at the bottom */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16 }}>
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, letterSpacing:"0.04em" }}>🏆 Top Articles (All Time)</div>
@@ -1867,7 +1879,7 @@ function SignInPage({ onSignIn }) {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <div style={{ width:"100%", maxWidth:420, padding:"0 20px" }}>
+      <div style={{ width:"100%", maxWidth:420, padding:"0 16px" }}>
         {/* Brand */}
         <div style={{ textAlign:"center", marginBottom:36 }}>
           <img src={LAKEWOOD_LOGO_B64} alt="Life at Lakewood" style={{ width:88, height:88, borderRadius:"50%", objectFit:"cover", marginBottom:16, boxShadow:"0 4px 24px rgba(168,85,247,0.4)", display:"block", margin:"0 auto 16px" }} />
@@ -1878,7 +1890,7 @@ function SignInPage({ onSignIn }) {
           <div style={{ fontSize:13, fontWeight:700, color:"#A855F7", letterSpacing:"0.04em" }}>Auto-Blogger</div>
         </div>
 
-        <div style={{ background:"#fff", borderRadius:20, padding:"32px 36px", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }}>
+        <div style={{ background:"#fff", borderRadius:20, padding:"28px 24px", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }}>
           <div style={{ fontSize:18, fontWeight:800, color:"#111827", marginBottom:4 }}>Sign In</div>
           <div style={{ fontSize:13, color:"#6B7280", marginBottom:24 }}>Welcome back. Sign in to manage your blogs.</div>
 
@@ -2064,15 +2076,17 @@ export default function App() {
   const [darkMode, setDarkMode]       = useState(false);
   const [goals, setGoals]             = useState({ lakewood: 4, wellen: 4, parrish: 4, longboat: 4 });
   const [view, setView]               = useState("calendar");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mob = useMobile();
 
   const isWorkflow = view.includes("_workflow");
   const propId     = isWorkflow ? view.replace(/_workflow.*/, "") : (PROPS[view] ? view : null);
   const activeProp = propId ? PROPS[propId] : null;
   const isDirectReview = view.includes("__review__");
 
-  const goToProp     = id => setView(id);
-  const goToWorkflow = id => setView(id+"_workflow");
-  const goBack       = ()  => setView(propId);
+  const goToProp     = id => { setView(id); setSidebarOpen(false); };
+  const goToWorkflow = id => { setView(id+"_workflow"); setSidebarOpen(false); };
+  const goBack       = ()  => { setView(propId); setSidebarOpen(false); };
 
   // Dark mode palette
   const dm = darkMode;
@@ -2093,12 +2107,37 @@ export default function App() {
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#2D3748; border-radius:4px; }
         ::-webkit-scrollbar-track { background:transparent; }
+        @media(max-width:767px){
+          .mob-hide { display:none!important; }
+        }
       `}</style>
 
       {showAccount && <AccountModal user={user} onUpdate={u=>setUser(u)} goals={goals} setGoals={setGoals} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={()=>setUser(null)} />}
 
+      {/* Mobile hamburger */}
+      {mob && (
+        <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{
+          position:"fixed", top:12, left:12, zIndex:1100, width:40, height:40, borderRadius:10,
+          background:sidebarBg, border:"1px solid #182431", color:"#ECF2F8", display:"flex",
+          alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:20
+        }}>
+          {sidebarOpen ? "✕" : "☰"}
+        </button>
+      )}
+
+      {/* Sidebar overlay */}
+      {mob && sidebarOpen && (
+        <div onClick={()=>setSidebarOpen(false)} style={{
+          position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000
+        }} />
+      )}
+
       {/* Sidebar */}
-      <div style={{ width:232, background:sidebarBg, flexShrink:0, display:"flex", flexDirection:"column", position:"sticky", top:0, height:"100vh", overflowY:"auto", transition:"background 0.3s" }}>
+      <div style={{
+        width:232, background:sidebarBg, flexShrink:0, display: mob && !sidebarOpen ? "none" : "flex",
+        flexDirection:"column", overflowY:"auto", transition:"background 0.3s",
+        ...(mob ? { position:"fixed", top:0, left:0, height:"100vh", zIndex:1050 } : { position:"sticky", top:0, height:"100vh" })
+      }}>
         <div style={{ padding:"20px 18px 14px", borderBottom:"1px solid #182431" }}>
           <div style={{ fontSize:7, fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", color:"#2E4155", marginBottom:5 }}>SEO Blog Builder</div>
           <div style={{ fontSize:12, fontWeight:800, color:"#ECF2F8", fontFamily:"'Inter','DM Sans',system-ui,sans-serif", lineHeight:1.3 }}>
@@ -2146,11 +2185,11 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex:1, overflowY:"auto" }}>
+      <div style={{ flex:1, overflowY:"auto", paddingTop: mob ? 56 : 0 }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
-        {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} onReviewChecklist={(articleId) => { /* find prop for this article */ const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
-        {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} />}
-        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} onBack={goBack} dm={dm} bg={bg} viewStr={view} />}
+        {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { /* find prop for this article */ const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
+        {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
+        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} onBack={goBack} dm={dm} bg={bg} viewStr={view} mob={mob} />}
       </div>
     </div>
   );
