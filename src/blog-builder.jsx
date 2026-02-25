@@ -31,6 +31,10 @@ const ARTICLES = [
   { id:"a10", p:"lakewood", title:"Lakewood Ranch vs. Sarasota: Which is Right for You?",    kw:"Lakewood Ranch vs Sarasota",          day:24, status:"scheduled" },
   { id:"a11", p:"wellen",   title:"Wellen Park Floor Plans: What Buyers Need to Know",        kw:"Wellen Park floor plans",             day:26, status:"scheduled" },
   { id:"a12", p:"parrish",  title:"Cost of Living in Parrish, Florida: Is It Worth It?",     kw:"Parrish Florida cost of living",      day:28, status:"scheduled" },
+  { id:"a13", p:"longboat", title:"Longboat Key Real Estate: A Complete 2026 Buyer's Guide", kw:"Longboat Key real estate guide",      day:4,  status:"published" },
+  { id:"a14", p:"longboat", title:"Best Restaurants on Longboat Key: A Local's Guide",        kw:"best restaurants Longboat Key FL",    day:10, status:"published" },
+  { id:"a15", p:"longboat", title:"Longboat Key Beach Guide: Every Beach You Need to Visit",  kw:"Longboat Key beaches guide",          day:17, status:"scheduled" },
+  { id:"a16", p:"longboat", title:"Living on Longboat Key: Pros, Cons & What to Expect",      kw:"living on Longboat Key Florida",      day:22, status:"in_wix"    },
 ];
 
 const STATS = {
@@ -51,6 +55,7 @@ const STATS = {
   },
   longboat: {
     totalPosts:15, gaps:4, sched:2, draft:0,
+    top:[{t:"Longboat Key Real Estate Guide",c:76,p:8.7},{t:"Best Restaurants Longboat Key",c:58,p:13.2},{t:"Longboat Key Beach Guide",c:41,p:17.9}],
     monthly:[3,4,2,5,3,4,2,3,4,5,3,4], goal:4,
     activity:[{l:"Published",v:"Longboat Key Real Estate Guide",t:"Feb 4"},{l:"Published",v:"Best Restaurants LBK",t:"Feb 10"},{l:"Scheduled",v:"Beach Guide",t:"Feb 17"}],
   },
@@ -213,6 +218,58 @@ const KEYWORD_SUGGESTIONS = {
     { kw:"Parrish FL home resale market 2026",          vol:380,  diff:20, intent:"Commercial" },
     { kw:"Parrish Florida internet fiber options",      vol:210,  diff:6,  intent:"Informational" },
     { kw:"Parrish FL senior living communities",        vol:450,  diff:19, intent:"Commercial" },
+  ],
+  longboat: [
+    { kw:"Longboat Key real estate market 2026",          vol:1900, diff:32, intent:"Commercial" },
+    { kw:"Longboat Key condos for sale oceanfront",       vol:1500, diff:37, intent:"Transactional" },
+    { kw:"living on Longboat Key Florida pros cons",      vol:1200, diff:25, intent:"Informational" },
+    { kw:"Longboat Key vs Siesta Key comparison",         vol:980,  diff:21, intent:"Informational" },
+    { kw:"Longboat Key restaurants best dining",          vol:1400, diff:18, intent:"Informational" },
+    { kw:"Longboat Key beach access public beaches",      vol:860,  diff:14, intent:"Informational" },
+    { kw:"Longboat Key property taxes rate",              vol:720,  diff:16, intent:"Informational" },
+    { kw:"Longboat Key flood zone insurance cost",        vol:640,  diff:19, intent:"Informational" },
+    { kw:"Longboat Key retirement community guide",       vol:1100, diff:28, intent:"Commercial" },
+    { kw:"Longboat Key waterfront homes for sale",        vol:1350, diff:35, intent:"Transactional" },
+    { kw:"Longboat Key vs Anna Maria Island",             vol:780,  diff:20, intent:"Informational" },
+    { kw:"Longboat Key golf club communities",            vol:590,  diff:22, intent:"Commercial" },
+    { kw:"Longboat Key hurricane preparedness safety",    vol:430,  diff:11, intent:"Informational" },
+    { kw:"Longboat Key new construction homes 2026",      vol:820,  diff:30, intent:"Commercial" },
+    { kw:"Longboat Key HOA fees condo maintenance",       vol:670,  diff:17, intent:"Informational" },
+    { kw:"Longboat Key fishing charter guide",            vol:510,  diff:12, intent:"Informational" },
+    { kw:"Longboat Key school district zoning",           vol:380,  diff:15, intent:"Informational" },
+    { kw:"Longboat Key rental investment property ROI",   vol:620,  diff:24, intent:"Commercial" },
+    { kw:"Longboat Key luxury homes over 2 million",      vol:740,  diff:33, intent:"Transactional" },
+    { kw:"Longboat Key wildlife nature preserves",        vol:290,  diff:8,  intent:"Informational" },
+    { kw:"Longboat Key bridge traffic commute",           vol:450,  diff:10, intent:"Informational" },
+    { kw:"Longboat Key dog friendly beaches parks",       vol:340,  diff:9,  intent:"Informational" },
+    { kw:"Longboat Key home appreciation value trends",   vol:560,  diff:23, intent:"Informational" },
+    { kw:"Longboat Key medical facilities nearby",        vol:310,  diff:13, intent:"Informational" },
+    { kw:"Longboat Key sunset cruise activities",         vol:270,  diff:7,  intent:"Informational" },
+    { kw:"Longboat Key vs Lido Key living",               vol:480,  diff:18, intent:"Informational" },
+    { kw:"Longboat Key pest control termite tips",        vol:220,  diff:6,  intent:"Informational" },
+    { kw:"Longboat Key kayaking paddleboard spots",       vol:360,  diff:11, intent:"Informational" },
+    { kw:"Longboat Key home insurance rates 2026",        vol:530,  diff:20, intent:"Informational" },
+    { kw:"Longboat Key walkability bike paths",           vol:400,  diff:14, intent:"Informational" },
+    { kw:"Longboat Key seasonal vs year round living",    vol:690,  diff:22, intent:"Informational" },
+    { kw:"Longboat Key marina boat slip rental",          vol:410,  diff:16, intent:"Commercial" },
+    { kw:"Longboat Key art galleries culture scene",      vol:250,  diff:8,  intent:"Informational" },
+    { kw:"Longboat Key grocery shopping stores nearby",   vol:320,  diff:7,  intent:"Informational" },
+    { kw:"Longboat Key first time buyer guide tips",      vol:580,  diff:21, intent:"Commercial" },
+    { kw:"Longboat Key pool home designs for sale",       vol:470,  diff:26, intent:"Transactional" },
+    { kw:"Longboat Key farmers market events",            vol:200,  diff:5,  intent:"Informational" },
+    { kw:"Longboat Key condo vs single family home",      vol:550,  diff:19, intent:"Informational" },
+    { kw:"Longboat Key closing costs estimate 2026",      vol:390,  diff:15, intent:"Informational" },
+    { kw:"Longboat Key best neighborhoods areas",         vol:710,  diff:24, intent:"Informational" },
+    { kw:"Longboat Key water sports activities",          vol:330,  diff:10, intent:"Informational" },
+    { kw:"Longboat Key spa wellness resorts",             vol:280,  diff:9,  intent:"Informational" },
+    { kw:"Longboat Key bird watching nature guide",       vol:190,  diff:4,  intent:"Informational" },
+    { kw:"Longboat Key home renovation permits",          vol:240,  diff:12, intent:"Informational" },
+    { kw:"Longboat Key private island exclusive homes",   vol:430,  diff:29, intent:"Commercial" },
+    { kw:"Longboat Key sea turtle nesting season",        vol:350,  diff:6,  intent:"Informational" },
+    { kw:"Longboat Key commute to Sarasota downtown",     vol:490,  diff:13, intent:"Informational" },
+    { kw:"Longboat Key internet cable providers",         vol:260,  diff:8,  intent:"Informational" },
+    { kw:"Longboat Key resale market trends 2026",        vol:500,  diff:22, intent:"Commercial" },
+    { kw:"Longboat Key senior living 55 plus options",    vol:610,  diff:25, intent:"Commercial" },
   ],
 };
 
@@ -2005,7 +2062,7 @@ export default function App() {
   const [user, setUser]               = useState(null);
   const [showAccount, setShowAccount] = useState(false);
   const [darkMode, setDarkMode]       = useState(false);
-  const [goals, setGoals]             = useState({ lakewood: 4, wellen: 4, parrish: 4 });
+  const [goals, setGoals]             = useState({ lakewood: 4, wellen: 4, parrish: 4, longboat: 4 });
   const [view, setView]               = useState("calendar");
 
   const isWorkflow = view.includes("_workflow");
