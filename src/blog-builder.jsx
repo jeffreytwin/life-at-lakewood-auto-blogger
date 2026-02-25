@@ -2232,12 +2232,12 @@ function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, 
 
 export default function App() {
   const [user, setUser]               = useState(() => { try { const s = localStorage.getItem("lal_user"); return s ? JSON.parse(s) : null; } catch { return null; } });
-  useEffect(() => { if (user) localStorage.setItem("lal_user", JSON.stringify(user)); else localStorage.removeItem("lal_user"); }, [user]);
-  useEffect(() => { localStorage.setItem("lal_darkMode", String(darkMode)); }, [darkMode]);
-  useEffect(() => { localStorage.setItem("lal_goals", JSON.stringify(goals)); }, [goals]);
   const [showAccount, setShowAccount] = useState(false);
   const [darkMode, setDarkMode]       = useState(() => { try { return localStorage.getItem("lal_darkMode") === "true"; } catch { return false; } });
   const [goals, setGoals]             = useState(() => { try { const s = localStorage.getItem("lal_goals"); return s ? JSON.parse(s) : { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } catch { return { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } });
+  useEffect(() => { if (user) localStorage.setItem("lal_user", JSON.stringify(user)); else localStorage.removeItem("lal_user"); }, [user]);
+  useEffect(() => { localStorage.setItem("lal_darkMode", String(darkMode)); }, [darkMode]);
+  useEffect(() => { localStorage.setItem("lal_goals", JSON.stringify(goals)); }, [goals]);
   const [view, setView]               = useState("calendar");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mob = useMobile();
