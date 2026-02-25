@@ -1843,7 +1843,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* Scheduled & Published Articles + Needs Attention */}
-      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 340px", gap:16, marginBottom:16, touchAction:"pan-y" }}>
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 340px", gap:16, marginBottom:16 }}>
 
         {/* Scheduled and Published articles with search */}
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
@@ -1857,7 +1857,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
               style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:12, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor=border} />
           </div>
-          <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10, touchAction:"pan-y" }}>
+          <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10 }}>
             {filteredArts.filter(a=>a.status==="published"||a.status==="scheduled").length === 0 ? (
               <div style={{ gridColumn:"1/-1", padding:"24px", textAlign:"center", color:muted, fontSize:13 }}>
                 {artSearch ? `No articles match "${artSearch}"` : "No scheduled or published articles yet"}
@@ -1888,7 +1888,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
         </div>
 
         {/* Needs Attention + Monthly Goal */}
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:14, ...(mob ? { order:-1 } : {}) }}>
           <div style={{ background:card, border:`1px solid ${draftArts.length > 0 ? "#FDE68A" : border}`, borderRadius:14, padding:"20px 22px", display:"flex", flexDirection:"column", flex:1 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
               <span style={{ fontSize:16 }}>{draftArts.length > 0 ? "⚠️" : "✅"}</span>
@@ -1969,7 +1969,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
       </div>
 
       {/* Top Articles + Recent Activity — now at the bottom */}
-      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16, touchAction:"pan-y" }}>
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16 }}>
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, letterSpacing:"0.04em" }}>🏆 Top Articles (All Time)</div>
@@ -2058,14 +2058,14 @@ function SignInPage({ onSignIn }) {
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>Email</label>
                   <input value={email} onChange={e=>{ setEmail(e.target.value); setError(""); }} placeholder="you@example.com" type="email"
-                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" }}
+                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" }}
                     onFocus={e=>e.target.style.borderColor="#A855F7"}
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
                 </div>
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>Password</label>
                   <input value={password} onChange={e=>{ setPassword(e.target.value); setError(""); }} placeholder="••••••••" type="password"
-                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" }}
+                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" }}
                     onFocus={e=>e.target.style.borderColor="#A855F7"}
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"}
                     onKeyDown={e=>{ if(e.key==="Enter") handleSubmit(); }} />
@@ -2110,7 +2110,7 @@ function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, 
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
 
-  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" };
+  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" };
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
@@ -2231,10 +2231,13 @@ function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, 
 // ─── APP SHELL ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [user, setUser]               = useState(null);
+  const [user, setUser]               = useState(() => { try { const s = localStorage.getItem("lal_user"); return s ? JSON.parse(s) : null; } catch { return null; } });
+  useEffect(() => { if (user) localStorage.setItem("lal_user", JSON.stringify(user)); else localStorage.removeItem("lal_user"); }, [user]);
+  useEffect(() => { localStorage.setItem("lal_darkMode", String(darkMode)); }, [darkMode]);
+  useEffect(() => { localStorage.setItem("lal_goals", JSON.stringify(goals)); }, [goals]);
   const [showAccount, setShowAccount] = useState(false);
-  const [darkMode, setDarkMode]       = useState(false);
-  const [goals, setGoals]             = useState({ lakewood: 4, wellen: 4, parrish: 4, longboat: 4 });
+  const [darkMode, setDarkMode]       = useState(() => { try { return localStorage.getItem("lal_darkMode") === "true"; } catch { return false; } });
+  const [goals, setGoals]             = useState(() => { try { const s = localStorage.getItem("lal_goals"); return s ? JSON.parse(s) : { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } catch { return { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } });
   const [view, setView]               = useState("calendar");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mob = useMobile();
@@ -2336,9 +2339,9 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", ...(mob ? { minHeight:0 } : { overflow:"hidden" }) }}>
         {mob && (
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", background:sidebarBg, borderBottom:"1px solid #182431", flexShrink:0, zIndex:50 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 12px", background:sidebarBg, borderBottom:"1px solid #182431", flexShrink:0, zIndex:50, position:"sticky", top:0 }}>
             <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{ width:36, height:36, borderRadius:8, background:"transparent", border:"1px solid #182431", color:"#ECF2F8", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18 }}>
               {sidebarOpen ? "✕" : "☰"}
             </button>
@@ -2350,7 +2353,7 @@ export default function App() {
             </div>
           </div>
         )}
-        <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
+        <div style={{ flex:1, ...(mob ? {} : { overflowY:"auto" }), touchAction:"manipulation" }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
         {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { /* find prop for this article */ const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
         {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
