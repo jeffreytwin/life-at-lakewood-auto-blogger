@@ -369,23 +369,27 @@ function StepBar({ step, prop, kwIndex, totalKws, mob=false }) {
     "Preview & Edit",
     "Review & Publish"
   ];
+  const mobileLabels = ["Keywords","Articles","Writing","Preview","Publish"];
   return (
-    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:32, flexWrap:"wrap" }}>
+    <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom: mob ? 20 : 32 }}>
       {steps.map((s, i) => {
         const done = i < step;
         const active = i === step;
         return (
           <div key={s} style={{ display:"flex", alignItems:"center", flex: i < steps.length-1 ? 1 : "none" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:28, height:28, borderRadius:"50%", background:done?prop.accent:active?prop.color:"#E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap: mob ? 4 : 8, flexShrink:0 }}>
+              <div style={{ width: mob ? 22 : 28, height: mob ? 22 : 28, borderRadius:"50%", background:done?prop.accent:active?prop.color:"#E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {done
-                  ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                  : <span style={{ fontSize:11, fontWeight:800, color:active?"#fff":"#9CA3AF" }}>{i+1}</span>
+                  ? <svg width={mob?10:13} height={mob?10:13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  : <span style={{ fontSize: mob ? 9 : 11, fontWeight:800, color:active?"#fff":"#9CA3AF" }}>{i+1}</span>
                 }
               </div>
-              <span style={{ fontSize: mob ? 9 : 12, fontWeight:700, color:active?prop.accent:done?prop.accent:"#9CA3AF", whiteSpace:"nowrap" }}>{s}</span>
+              {mob
+                ? (active && <span style={{ fontSize:10, fontWeight:700, color:prop.accent, whiteSpace:"nowrap" }}>{mobileLabels[i]}</span>)
+                : <span style={{ fontSize:12, fontWeight:700, color:active?prop.accent:done?prop.accent:"#9CA3AF", whiteSpace:"nowrap" }}>{s}</span>
+              }
             </div>
-            {i < steps.length-1 && <div style={{ flex:1, height:2, background:done?prop.accent:"#E5E7EB", margin: mob ? "0 4px" : "0 12px", minWidth: mob ? 8 : 20 }} />}
+            {i < steps.length-1 && <div style={{ flex:1, height:2, background:done?prop.accent:"#E5E7EB", margin: mob ? "0 3px" : "0 12px", minWidth: mob ? 4 : 20 }} />}
           </div>
         );
       })}
@@ -539,7 +543,7 @@ function StepKeywords({ prop, onNext }) {
                     onBlur={()=>setSeedFocused(false)}
                     onKeyDown={e=>e.key==="Enter" && handleLoadMore()}
                     placeholder={`e.g. "new construction, retirement, schools, cost of living"`}
-                    style={{ flex:1, padding:"8px 12px", border:"none", outline:"none", fontSize:12, background:"transparent", color:"#111827" }}
+                    style={{ flex:1, padding:"8px 12px", border:"none", outline:"none", fontSize:16, background:"transparent", color:"#111827" }}
                   />
                 </div>
                 <button
@@ -556,17 +560,12 @@ function StepKeywords({ prop, onNext }) {
             </div>
           </div>
 
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <div style={{ fontSize:12, color:"#6B7280", background:prop.light, padding:"8px 14px", borderRadius:8 }}>
-                💡 <strong>Difficulty under 30</strong> = fast wins. Claude prioritizes these in article suggestions.
-              </div>
-              {selected.size > 0 && (
-                <span style={{ fontSize:12, fontWeight:700, color:prop.accent }}>{selected.size} keyword{selected.size>1?"s":""} selected</span>
-              )}
-            </div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+            {selected.size > 0 && (
+              <span style={{ fontSize:12, fontWeight:700, color:prop.accent }}>{selected.size} keyword{selected.size>1?"s":""} selected</span>
+            )}
             <button onClick={()=>onNext(Array.from(selected))} disabled={selected.size===0}
-              style={{ padding:"11px 28px", background:selected.size>0?prop.color:"#E5E7EB", color:selected.size>0?"#fff":"#9CA3AF", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:selected.size>0?"pointer":"not-allowed" }}>
+              style={{ padding:"11px 28px", background:selected.size>0?prop.color:"#E5E7EB", color:selected.size>0?"#fff":"#9CA3AF", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:selected.size>0?"pointer":"not-allowed", marginLeft:"auto" }}>
               {selected.size>0 ? `Generate Articles for ${selected.size} Keyword${selected.size>1?"s":""}` : "Select Keywords to Continue"} →
             </button>
           </div>
@@ -760,7 +759,7 @@ function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, onConf
                 onBlur={() => setInputFocused(false)}
                 onKeyDown={e => e.key === "Enter" && handleAddKw()}
                 placeholder="e.g. best schools, family neighborhoods…"
-                style={{ flex: 1, padding: "8px 12px", border: "none", outline: "none", fontSize: 12, background: "transparent", color: "#111827" }}
+                style={{ flex: 1, padding: "8px 12px", border: "none", outline: "none", fontSize: 16, background: "transparent", color: "#111827" }}
               />
             </div>
             <button onClick={handleAddKw} disabled={!extraKw.trim()}
@@ -1108,14 +1107,14 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
           <div style={{ marginBottom:10 }}>
             <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>SEO Title</label>
             <input value={content.seoTitle} onChange={e => handleMetaEdit("seoTitle", e.target.value)}
-              style={{ width:"100%", padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:8, fontSize:12, color:"#111827", outline:"none", background:"#fff" }}
+              style={{ width:"100%", padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:8, fontSize:16, color:"#111827", outline:"none", background:"#fff" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
             <div style={{ fontSize:10, color:content.seoTitle.length > 60 ? "#EF4444" : "#9CA3AF", marginTop:3 }}>{content.seoTitle.length}/60 characters</div>
           </div>
           <div style={{ marginBottom:10 }}>
             <label style={{ fontSize:11, fontWeight:700, color:"#6B7280", display:"block", marginBottom:4 }}>Meta Description</label>
             <textarea value={content.metaDescription} onChange={e => handleMetaEdit("metaDescription", e.target.value)}
-              rows={2} style={{ width:"100%", padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:8, fontSize:12, color:"#111827", outline:"none", resize:"vertical", background:"#fff", fontFamily:"inherit" }}
+              rows={2} style={{ width:"100%", padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:8, fontSize:16, color:"#111827", outline:"none", resize:"vertical", background:"#fff", fontFamily:"inherit" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
             <div style={{ fontSize:10, color:content.metaDescription.length > 160 ? "#EF4444" : "#9CA3AF", marginTop:3 }}>{content.metaDescription.length}/160 characters</div>
           </div>
@@ -1124,7 +1123,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
             <div style={{ display:"flex", alignItems:"center", gap:0, fontSize:12, color:"#9CA3AF" }}>
               <span style={{ padding:"8px 8px 8px 12px", background:"#F3F4F6", border:"1px solid #E5E7EB", borderRight:"none", borderRadius:"8px 0 0 8px", whiteSpace:"nowrap" }}>{prop.blog}/</span>
               <input value={content.slug} onChange={e => handleMetaEdit("slug", e.target.value)}
-                style={{ flex:1, padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:"0 8px 8px 0", fontSize:12, color:"#111827", outline:"none", background:"#fff" }}
+                style={{ flex:1, padding:"8px 12px", border:"1px solid #E5E7EB", borderRadius:"0 8px 8px 0", fontSize:16, color:"#111827", outline:"none", background:"#fff" }}
                 onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
             </div>
           </div>
@@ -1135,11 +1134,11 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
         {content.sections.map((sec, si) => (
           <div key={si} style={{ marginBottom:16, borderLeft:`3px solid ${prop.light}`, paddingLeft:16 }}>
             <input value={sec.heading} onChange={e => handleSectionEdit(si, "heading", e.target.value)}
-              style={{ width:"100%", padding:"6px 0", border:"none", borderBottom:"1px solid #F3F4F6", fontSize:14, fontWeight:700, color:"#111827", outline:"none", background:"transparent", marginBottom:8 }}
+              style={{ width:"100%", padding:"6px 0", border:"none", borderBottom:"1px solid #F3F4F6", fontSize:16, fontWeight:700, color:"#111827", outline:"none", background:"transparent", marginBottom:8 }}
               onFocus={e=>e.target.style.borderBottomColor=prop.accent} onBlur={e=>e.target.style.borderBottomColor="#F3F4F6"} />
             <textarea value={sec.body} onChange={e => handleSectionEdit(si, "body", e.target.value)}
               rows={Math.max(4, Math.ceil(sec.body.length / 90))}
-              style={{ width:"100%", padding:"8px 0", border:"none", fontSize:13, color:"#374151", outline:"none", resize:"vertical", lineHeight:1.7, background:"transparent", fontFamily:"inherit" }} />
+              style={{ width:"100%", padding:"8px 0", border:"none", fontSize:16, color:"#374151", outline:"none", resize:"vertical", lineHeight:1.7, background:"transparent", fontFamily:"inherit" }} />
           </div>
         ))}
 
@@ -1156,7 +1155,7 @@ function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
             <textarea value={revisionInput} onChange={e => setRevisionInput(e.target.value)}
               placeholder='e.g. "Make the intro more conversational" or "Add a section about school zoning"'
               rows={2}
-              style={{ flex:1, padding:"8px 12px", border:"1px solid #FDE68A", borderRadius:8, fontSize:12, color:"#111827", outline:"none", resize:"vertical", background:"#fff", fontFamily:"inherit" }}
+              style={{ flex:1, padding:"8px 12px", border:"1px solid #FDE68A", borderRadius:8, fontSize:16, color:"#111827", outline:"none", resize:"vertical", background:"#fff", fontFamily:"inherit" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor="#FDE68A"} />
             <button onClick={handleRequestRevision} disabled={!revisionInput.trim() || revising}
               style={{ padding:"8px 18px", background:revising ? "#E5E7EB" : prop.color, color:revising ? "#9CA3AF" : "#fff", border:"none", borderRadius:8, fontSize:12, fontWeight:700, cursor:revising?"not-allowed":"pointer", whiteSpace:"nowrap", alignSelf:"flex-end" }}>
@@ -1270,7 +1269,7 @@ function StepReview({ prop, articles, onDone, onGenerateMore }) {
         })}
       </div>
 
-      <div style={{ display:"flex", justifyContent:"space-between" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
         <button onClick={onGenerateMore} style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"11px 24px", background:"transparent", color:prop.accent, border:`1.5px solid ${prop.accent}`, borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Generate More Articles
@@ -1854,7 +1853,7 @@ function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F
           <div style={{ position:"relative", marginBottom:14 }}>
             <svg style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input value={artSearch} onChange={e=>setArtSearch(e.target.value)} placeholder="Search by title or keyword…"
-              style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:12, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
+              style={{ width:"100%", padding:"8px 12px 8px 32px", border:`1px solid ${border}`, borderRadius:8, fontSize:16, outline:"none", color:text, background:dm?"#0F172A":"#FAFAFA" }}
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor=border} />
           </div>
           <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10 }}>
@@ -2058,14 +2057,14 @@ function SignInPage({ onSignIn }) {
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>Email</label>
                   <input value={email} onChange={e=>{ setEmail(e.target.value); setError(""); }} placeholder="you@example.com" type="email"
-                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" }}
+                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" }}
                     onFocus={e=>e.target.style.borderColor="#A855F7"}
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
                 </div>
                 <div>
                   <label style={{ fontSize:11, fontWeight:700, color:"#374151", display:"block", marginBottom:5 }}>Password</label>
                   <input value={password} onChange={e=>{ setPassword(e.target.value); setError(""); }} placeholder="••••••••" type="password"
-                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" }}
+                    style={{ width:"100%", padding:"10px 13px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" }}
                     onFocus={e=>e.target.style.borderColor="#A855F7"}
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"}
                     onKeyDown={e=>{ if(e.key==="Enter") handleSubmit(); }} />
@@ -2110,10 +2109,10 @@ function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, 
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
 
-  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:13, outline:"none", color:"#111827" };
+  const inp = { width:"100%", padding:"9px 12px", border:"1.5px solid #E5E7EB", borderRadius:9, fontSize:16, outline:"none", color:"#111827" };
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
       <div style={{ background:"#fff", borderRadius:18, width:460, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
@@ -2274,16 +2273,7 @@ export default function App() {
 
       {showAccount && <AccountModal user={user} onUpdate={u=>setUser(u)} goals={goals} setGoals={setGoals} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={()=>setUser(null)} />}
 
-      {/* Mobile hamburger */}
-      {mob && (
-        <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{
-          position:"fixed", top:12, left:12, zIndex:1100, width:40, height:40, borderRadius:10,
-          background:sidebarBg, border:"1px solid #182431", color:"#ECF2F8", display:"flex",
-          alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:20
-        }}>
-          {sidebarOpen ? "✕" : "☰"}
-        </button>
-      )}
+      {/* Mobile hamburger - removed, now rendered inside main content */}
 
       {/* Sidebar overlay */}
       {mob && sidebarOpen && (
@@ -2317,7 +2307,7 @@ export default function App() {
         {/* Bottom bar: avatar + Account button, then APIs */}
         <div style={{ padding:"12px 16px", borderTop:"1px solid #182431" }}>
           {/* Avatar + Account row — clicking either opens Account modal */}
-          <button onClick={()=>setShowAccount(true)} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", marginBottom:8, textAlign:"left" }}
+          <button onClick={()=>{ setSidebarOpen(false); setShowAccount(true); }} style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:8, border:"none", background:"transparent", cursor:"pointer", marginBottom:8, textAlign:"left" }}
             onMouseEnter={e=>e.currentTarget.style.background="#141E28"}
             onMouseLeave={e=>e.currentTarget.style.background="transparent"}
           >
@@ -2345,7 +2335,36 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div style={{ flex:1, overflowY:"auto", paddingTop: mob ? 56 : 0 }}>
+      <div style={{ flex:1, overflowY:"auto" }}>
+        {/* Mobile top bar */}
+        {mob && (
+          <div style={{
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            padding:"10px 12px", background:sidebarBg, borderBottom:"1px solid #182431"
+          }}>
+            <button onClick={()=>setSidebarOpen(!sidebarOpen)} style={{
+              width:36, height:36, borderRadius:8,
+              background:"transparent", border:"1px solid #2E4155", color:"#ECF2F8", display:"flex",
+              alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:18
+            }}>
+              {sidebarOpen ? "✕" : "☰"}
+            </button>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#ECF2F8", lineHeight:1.2 }}>Life At Lakewood</div>
+              <div style={{ fontSize:8, fontWeight:700, color:"#A855F7" }}>Auto-Blogger</div>
+            </div>
+            <button onClick={()=>{ setSidebarOpen(false); setShowAccount(true); }} style={{
+              width:36, height:36, borderRadius:8,
+              background:"transparent", border:"1px solid #2E4155", color:"#ECF2F8", display:"flex",
+              alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:14
+            }}>
+              {user.avatar
+                ? <img src={user.avatar} alt={user.name} style={{ width:24, height:24, borderRadius:"50%", objectFit:"cover" }} />
+                : <span style={{ fontSize:13, fontWeight:800 }}>{user.name.charAt(0).toUpperCase()}</span>
+              }
+            </button>
+          </div>
+        )}
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
         {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { /* find prop for this article */ const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
         {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
