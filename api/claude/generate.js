@@ -6,10 +6,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { title, keyword, property, propertyUrl, blogUrl } = req.body;
+  const { title, keyword, property, propertyUrl, blogUrl, writingStyle } = req.body;
   if (!title || !keyword || !property) {
     return res.status(400).json({ error: "Missing required fields" });
   }
+
+  const styleBlock = writingStyle
+    ? `\n\nThe user has provided these writing style preferences — follow them closely:\n${writingStyle}\n`
+    : "";
 
   const prompt = `You are an expert SEO blog writer for a real estate website about ${property}, Florida (${propertyUrl}).
 
@@ -18,18 +22,18 @@ Write a complete, publish-ready blog article with the following requirements:
 - Primary keyword: "${keyword}"
 - Target audience: Home buyers and people relocating to ${property}, Florida
 - Tone: Informative, conversational, trustworthy — like a knowledgeable local friend
-- Length: 1,200–1,500 words total
-
+- Length: 800–1,000 words total. Be concise and helpful — every sentence should provide value. No filler, no fluff, no generic padding. Get straight to the point.
+${styleBlock}
 Respond ONLY with valid JSON (no markdown, no backticks):
 {
   "seoTitle": "SEO-optimized title tag (under 60 characters)",
   "metaDescription": "Compelling meta description (under 160 characters)",
   "slug": "url-friendly-slug",
   "sections": [
-    { "heading": "Introduction", "body": "2-3 paragraphs..." },
-    { "heading": "Section Title", "body": "2-3 paragraphs..." },
-    { "heading": "Section Title", "body": "2-3 paragraphs..." },
-    { "heading": "Our Recommendation", "body": "1-2 paragraphs with CTA..." }
+    { "heading": "Introduction", "body": "1-2 tight paragraphs..." },
+    { "heading": "Section Title", "body": "1-2 focused paragraphs with specifics..." },
+    { "heading": "Section Title", "body": "1-2 focused paragraphs with specifics..." },
+    { "heading": "Our Recommendation", "body": "1 paragraph with CTA..." }
   ]
 }
 

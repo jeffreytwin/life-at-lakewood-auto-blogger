@@ -30,14 +30,19 @@ export default function StepKeywords({ prop, onNext }) {
   const [scanning, setScanning]     = useState(true);
   const [progress, setProgress]     = useState(0);
   const [selected, setSelected]     = useState(new Set());
-  const [keywords, setKeywords]     = useState(KEYWORD_SUGGESTIONS[prop.id]);
+  const [keywords, setKeywords]     = useState(() => (KEYWORD_SUGGESTIONS[prop.id] || []).slice(0, 50));
   const [seedInput, setSeedInput]   = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [seedFocused, setSeedFocused] = useState(false);
   const [gscConnected, setGscConnected] = useState(false);
   const gscFetchedRef = useRef(false);
 
-  // Try to fetch real GSC keywords during the scanning animation
+  // Sort & filter state
+  const [sortBy, setSortBy] = useState("vol");
+  const [sortDir, setSortDir] = useState("desc");
+  const [intentFilter, setIntentFilter] = useState("all");
+  const [kwSearch, setKwSearch] = useState("");
+
   useEffect(() => {
     if (gscFetchedRef.current) return;
     gscFetchedRef.current = true;
@@ -47,13 +52,12 @@ export default function StepKeywords({ prop, onNext }) {
       .then(data => {
         if (data.connected) setGscConnected(true);
         if (data.keywords && data.keywords.length > 0) {
-          // Merge GSC keywords with mock data, GSC first
           const gscKws = new Set(data.keywords.map(k => k.kw));
-          const mockOnly = KEYWORD_SUGGESTIONS[prop.id].filter(k => !gscKws.has(k.kw));
-          setKeywords([...data.keywords, ...mockOnly]);
+          const mockOnly = (KEYWORD_SUGGESTIONS[prop.id] || []).filter(k => !gscKws.has(k.kw));
+          setKeywords([...data.keywords, ...mockOnly].slice(0, 50));
         }
       })
-      .catch(() => { /* GSC unavailable, keep mock data */ });
+      .catch(() => {});
   }, [prop.id]);
 
   useEffect(() => {
@@ -71,8 +75,6 @@ export default function StepKeywords({ prop, onNext }) {
     n.has(kw) ? n.delete(kw) : n.add(kw);
     setSelected(n);
   };
-  const selectAll = () => setSelected(new Set(keywords.map(k=>k.kw)));
-  const clearAll  = () => setSelected(new Set());
 
   const handleLoadMore = async () => {
     if (loadingMore) return;
@@ -87,7 +89,31 @@ export default function StepKeywords({ prop, onNext }) {
     setLoadingMore(false);
   };
 
+  const handleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(col); setSortDir(col === "kw" ? "asc" : "desc"); }
+  };
+
+  const filtered = keywords.filter(k => {
+    if (intentFilter !== "all" && k.intent !== intentFilter) return false;
+    if (kwSearch.trim() && !k.kw.toLowerCase().includes(kwSearch.toLowerCase())) return false;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortBy === "kw") return dir * a.kw.localeCompare(b.kw);
+    if (sortBy === "vol") return dir * (a.vol - b.vol);
+    if (sortBy === "diff") return dir * (a.diff - b.diff);
+    return 0;
+  });
+
+  const selectAllFiltered = () => setSelected(new Set([...selected, ...sorted.map(k=>k.kw)]));
+  const clearAll = () => setSelected(new Set());
+  const allFilteredSelected = sorted.length > 0 && sorted.every(k => selected.has(k.kw));
+
   const intentColor = { Commercial:{ bg:"#DBEAFE",tx:"#1E40AF" }, Transactional:{ bg:"#FEF3C7",tx:"#92400E" }, Informational:{ bg:"#F3F4F6",tx:"#374151" } };
+  const sortArrow = (col) => sortBy === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
 
   return (
     <div>
@@ -120,21 +146,78 @@ export default function StepKeywords({ prop, onNext }) {
           <div style={{ fontSize:12, color:"#9CA3AF" }}>Checking GSC data · Analyzing SERPs · Scoring difficulty…</div>
         </div>
       ) : (
-        <>
-          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", marginBottom:12, overflowX:"auto" }}>
+        <div style={{ position:"relative" }}>
+          {/* Load more section — ON TOP */}
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, padding:"14px 20px", marginBottom:12 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:"#6B7280", marginBottom:8 }}>
+              💡 Load more keyword ideas — enter topics or themes to explore (comma-separated), or leave blank to auto-generate:
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <div style={{ flex:1, borderRadius:8, overflow:"hidden", border:`1.5px solid ${seedFocused?prop.accent:"#E5E7EB"}`, background:"#fff", display:"flex", transition:"border-color 0.15s" }}>
+                <input
+                  value={seedInput}
+                  onChange={e=>setSeedInput(e.target.value)}
+                  onFocus={()=>setSeedFocused(true)}
+                  onBlur={()=>setSeedFocused(false)}
+                  onKeyDown={e=>e.key==="Enter" && handleLoadMore()}
+                  placeholder={`e.g. "new construction, retirement, schools, cost of living"`}
+                  style={{ flex:1, padding:"8px 12px", border:"none", outline:"none", fontSize:12, background:"transparent", color:"#111827" }}
+                />
+              </div>
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", background:loadingMore?"#F3F4F6":prop.color, color:loadingMore?"#9CA3AF":"#fff", border:"none", borderRadius:8, fontSize:12, fontWeight:800, cursor:loadingMore?"not-allowed":"pointer", flexShrink:0, transition:"all 0.15s" }}
+              >
+                {loadingMore
+                  ? <><div style={{ width:14, height:14, borderRadius:"50%", border:"2px solid #D1D5DB", borderTopColor:"transparent", animation:"spin 0.7s linear infinite" }} /> Generating…</>
+                  : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Load More Keywords</>
+                }
+              </button>
+            </div>
+          </div>
+
+          {/* Filter bar */}
+          <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
+            <div style={{ flex:1, minWidth:160, maxWidth:300, borderRadius:8, overflow:"hidden", border:"1.5px solid #E5E7EB", background:"#fff", display:"flex" }}>
+              <svg style={{ margin:"8px 0 8px 10px", flexShrink:0 }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input
+                value={kwSearch}
+                onChange={e=>setKwSearch(e.target.value)}
+                placeholder="Filter keywords…"
+                style={{ flex:1, padding:"8px 10px", border:"none", outline:"none", fontSize:12, background:"transparent", color:"#111827" }}
+              />
+            </div>
+            <select value={intentFilter} onChange={e=>setIntentFilter(e.target.value)}
+              style={{ padding:"8px 12px", border:"1.5px solid #E5E7EB", borderRadius:8, fontSize:12, fontWeight:700, color:"#374151", background:"#fff", cursor:"pointer", outline:"none" }}>
+              <option value="all">All Intents</option>
+              <option value="Informational">Informational</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Transactional">Transactional</option>
+            </select>
+            <div style={{ fontSize:11, color:"#9CA3AF", fontWeight:600 }}>
+              {sorted.length} keyword{sorted.length !== 1 ? "s" : ""}
+            </div>
+          </div>
+
+          {/* Keyword table */}
+          <div style={{ background:"#fff", border:"1px solid #E5E7EB", borderRadius:14, overflow:"hidden", marginBottom: mob ? 80 : 12, overflowX:"auto" }}>
             <div style={{ display:"grid", gridTemplateColumns:"36px 2fr 1fr 1fr 1fr", padding:"10px 20px", background:"#F9FAFB", borderBottom:"1px solid #E5E7EB", fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.08em", textTransform:"uppercase", alignItems:"center" }}>
               <div>
-                <input type="checkbox" checked={selected.size===keywords.length && keywords.length > 0} onChange={e=>e.target.checked?selectAll():clearAll()}
+                <input type="checkbox" checked={allFilteredSelected && sorted.length > 0} onChange={e=>e.target.checked?selectAllFiltered():clearAll()}
                   style={{ cursor:"pointer", accentColor:prop.color, width:14, height:14 }} />
               </div>
-              <div>Keyword</div><div>Monthly Searches</div><div>Difficulty</div><div>Intent</div>
+              <div onClick={()=>handleSort("kw")} style={{ cursor:"pointer" }}>Keyword{sortArrow("kw")}</div>
+              <div onClick={()=>handleSort("vol")} style={{ cursor:"pointer" }}>Monthly Searches{sortArrow("vol")}</div>
+              <div onClick={()=>handleSort("diff")} style={{ cursor:"pointer" }}>Difficulty{sortArrow("diff")}</div>
+              <div>Intent</div>
             </div>
-            {keywords.map((k,i) => {
+            {sorted.map((k,i) => {
               const ic = intentColor[k.intent]||intentColor.Informational;
               const diffColor = k.diff < 25 ? "#22C55E" : k.diff < 35 ? "#F59E0B" : "#EF4444";
               const isSel = selected.has(k.kw);
               return (
-                <div key={i} onClick={()=>toggle(k.kw)} style={{ display:"grid", gridTemplateColumns:"36px 2fr 1fr 1fr 1fr", padding:"12px 20px", alignItems:"center", borderBottom:i<keywords.length-1?"1px solid #F9FAFB":"none", background:isSel?prop.light+"80":"transparent", cursor:"pointer", transition:"background 0.12s" }}
+                <div key={i} onClick={()=>toggle(k.kw)} style={{ display:"grid", gridTemplateColumns:"36px 2fr 1fr 1fr 1fr", padding:"12px 20px", alignItems:"center", borderBottom:i<sorted.length-1?"1px solid #F9FAFB":"none", background:isSel?prop.light+"80":"transparent", cursor:"pointer", transition:"background 0.12s" }}
                   onMouseEnter={e=>{ if(!isSel) e.currentTarget.style.background="#F9FAFB"; }}
                   onMouseLeave={e=>{ e.currentTarget.style.background=isSel?prop.light+"80":"transparent"; }}
                 >
@@ -155,39 +238,28 @@ export default function StepKeywords({ prop, onNext }) {
                 </div>
               );
             })}
-
-            {/* Load more row */}
-            <div style={{ padding:"14px 20px", borderTop:"1px solid #F3F4F6", background:"#FAFAFA" }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"#6B7280", marginBottom:8 }}>
-                💡 Load more keyword ideas — enter topics or themes to explore (comma-separated), or leave blank to auto-generate:
+            {sorted.length === 0 && (
+              <div style={{ padding:"24px", textAlign:"center", color:"#9CA3AF", fontSize:13 }}>
+                No keywords match your filters
               </div>
-              <div style={{ display:"flex", gap:8 }}>
-                <div style={{ flex:1, borderRadius:8, overflow:"hidden", border:`1.5px solid ${seedFocused?prop.accent:"#E5E7EB"}`, background:"#fff", display:"flex", transition:"border-color 0.15s" }}>
-                  <input
-                    value={seedInput}
-                    onChange={e=>setSeedInput(e.target.value)}
-                    onFocus={()=>setSeedFocused(true)}
-                    onBlur={()=>setSeedFocused(false)}
-                    onKeyDown={e=>e.key==="Enter" && handleLoadMore()}
-                    placeholder={`e.g. "new construction, retirement, schools, cost of living"`}
-                    style={{ flex:1, padding:"8px 12px", border:"none", outline:"none", fontSize:12, background:"transparent", color:"#111827" }}
-                  />
-                </div>
-                <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", background:loadingMore?"#F3F4F6":prop.color, color:loadingMore?"#9CA3AF":"#fff", border:"none", borderRadius:8, fontSize:12, fontWeight:800, cursor:loadingMore?"not-allowed":"pointer", flexShrink:0, transition:"all 0.15s" }}
-                >
-                  {loadingMore
-                    ? <><div style={{ width:14, height:14, borderRadius:"50%", border:"2px solid #D1D5DB", borderTopColor:"transparent", animation:"spin 0.7s linear infinite" }} /> Generating…</>
-                    : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Load More Keywords</>
-                  }
-                </button>
-              </div>
-            </div>
+            )}
           </div>
 
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 0" }}>
+          {/* Floating action bar */}
+          <div style={{
+            position: mob ? "fixed" : "sticky",
+            bottom: 0,
+            left: mob ? 0 : "auto",
+            right: mob ? 0 : "auto",
+            background:"#fff",
+            borderTop:"1px solid #E5E7EB",
+            padding: mob ? "12px 16px" : "12px 0",
+            display:"flex",
+            justifyContent:"space-between",
+            alignItems:"center",
+            zIndex:100,
+            ...(mob ? { boxShadow:"0 -4px 16px rgba(0,0,0,0.1)" } : {}),
+          }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               {selected.size > 0 && (
                 <span style={{ fontSize:12, fontWeight:700, color:prop.accent }}>{selected.size} keyword{selected.size>1?"s":""} selected</span>
@@ -198,8 +270,9 @@ export default function StepKeywords({ prop, onNext }) {
               {selected.size>0 ? `Generate Articles for ${selected.size} Keyword${selected.size>1?"s":""}` : "Select Keywords to Continue"} →
             </button>
           </div>
+
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </>
+        </div>
       )}
     </div>
   );

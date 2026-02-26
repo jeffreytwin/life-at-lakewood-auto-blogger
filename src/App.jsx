@@ -47,11 +47,14 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const u = session.user;
+        // Check localStorage for saved profile overrides
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem("lal_user") || "{}"); } catch {}
         setUser({
           id: u.id,
-          name: u.user_metadata?.full_name || u.email.split("@")[0],
+          name: saved.name || u.user_metadata?.full_name || u.email.split("@")[0],
           email: u.email,
-          avatar: u.user_metadata?.avatar_url || null,
+          avatar: saved.avatar || u.user_metadata?.avatar_url || null,
         });
       }
       setAuthLoading(false);
@@ -98,6 +101,16 @@ export default function App() {
   const muted  = dm ? "#94A3B8" : "#6B7280";
   const sidebarBg = dm ? "#060F1A" : "#0E1A24";
 
+  const handleUpdateUser = async (updates) => {
+    setUser(prev => ({ ...prev, ...updates }));
+    // Persist to localStorage for immediate reload
+    try { localStorage.setItem("lal_user", JSON.stringify({ ...user, ...updates })); } catch {}
+    // Also persist name to Supabase user metadata
+    try {
+      await supabase.auth.updateUser({ data: { full_name: updates.name, avatar_url: updates.avatar } });
+    } catch {}
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -125,7 +138,7 @@ export default function App() {
         }
       `}</style>
 
-      {showAccount && <AccountModal user={user} onUpdate={u=>setUser(u)} goals={goals} setGoals={setGoals} writingStyle={writingStyle} setWritingStyle={setWritingStyle} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={handleSignOut} />}
+      {showAccount && <AccountModal user={user} onUpdate={handleUpdateUser} goals={goals} setGoals={setGoals} writingStyle={writingStyle} setWritingStyle={setWritingStyle} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={handleSignOut} />}
 
       {/* Sidebar overlay */}
       {mob && sidebarOpen && (
@@ -201,9 +214,9 @@ export default function App() {
         )}
         <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
-        {view === "calendar" && <CalendarView articles={articles} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { const a = articles.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
+        {view === "calendar" && <CalendarView articles={articles} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onRefresh={refreshArticles} refreshing={articlesLoading} onReviewChecklist={(articleId) => { const a = articles.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
         {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} articles={articles} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
-        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} articles={articles} onBack={() => { refreshArticles(); goBack(); }} dm={dm} bg={bg} viewStr={view} mob={mob} />}
+        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} articles={articles} onBack={() => { refreshArticles(); goBack(); }} dm={dm} bg={bg} viewStr={view} mob={mob} writingStyle={writingStyle} onRefreshArticles={refreshArticles} />}
         </div>
       </div>
     </div>

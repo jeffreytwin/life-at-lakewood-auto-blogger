@@ -7,7 +7,7 @@ import StepGenerating from "./StepGenerating";
 import StepPreviewEdit from "./StepPreviewEdit";
 import StepReview from "./StepReview";
 
-export default function WorkflowView({ prop, articles: allArticles = [], onBack, dm=false, bg="#F2F1ED", viewStr="", mob=false }) {
+export default function WorkflowView({ prop, articles: allArticles = [], onBack, dm=false, bg="#F2F1ED", viewStr="", mob=false, writingStyle="", onRefreshArticles }) {
   // Detect direct-review entry (from "Needs Attention" button)
   const directReviewMatch = viewStr.match(/__review__(.+)/);
   const directReviewArticleId = directReviewMatch ? directReviewMatch[1] : null;
@@ -98,8 +98,8 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
         />
       )}
 
-      {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} articles={chosenArticles} onDone={(contents) => { setGeneratedContents(contents); setStep(3); }} />}
-      {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} initialContents={generatedContents} onApprove={() => setStep(4)} onBack={() => { setGeneratedContents(null); setStep(2); }} />}
+      {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} articles={chosenArticles} writingStyle={writingStyle} onDone={(contents) => { setGeneratedContents(contents); setStep(3); }} />}
+      {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} initialContents={generatedContents} onApprove={(contents) => { setGeneratedContents(contents); setStep(4); if (onRefreshArticles) onRefreshArticles(); }} onBack={() => { setGeneratedContents(null); setStep(2); }} />}
       {step === 4 && <StepReview prop={prop} articles={chosenArticles} allArticles={allArticles} onDone={onBack} onGenerateMore={() => { setStep(0); setSelectedKeywords([]); setKwPageIndex(0); }} />}
     </div>
   );

@@ -159,6 +159,32 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
         </div>
       )}
 
+      {/* Floating approve bar on desktop */}
+      {!mob && (
+        <div style={{
+          position:"sticky", top:0, zIndex:50,
+          background:"#fff", borderBottom:"1px solid #E5E7EB",
+          padding:"10px 26px", marginBottom:16, borderRadius:"14px 14px 0 0",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
+        }}>
+          <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>
+            {article.title.length > 60 ? article.title.slice(0, 57) + "…" : article.title}
+          </div>
+          {approvedSet.has(activeIndex)
+            ? <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, fontWeight:700, color:"#22C55E", background:"#F0FDF4", padding:"6px 14px", borderRadius:8 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Approved
+              </div>
+            : <button onClick={handleApproveArticle}
+                style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, fontWeight:700, color:"#fff", background:"#22C55E", padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Approve Article
+              </button>
+          }
+        </div>
+      )}
+
       {/* Article header */}
       <div style={{ background:"#fff", border:`1px solid ${approvedSet.has(activeIndex)?prop.accent:"#E5E7EB"}`, borderRadius:14, padding:"24px 26px", marginBottom:16 }}>
         <div style={{ display:"flex", flexDirection: mob ? "column" : "row", justifyContent:"space-between", alignItems: mob ? "stretch" : "flex-start", gap: mob ? 12 : 0, marginBottom:16 }}>

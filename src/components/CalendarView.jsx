@@ -4,7 +4,7 @@ import { LOGOS } from "../data/logos";
 import { SM, TODAY, MONTH_DATA, CURRENT_MONTH_IDX } from "../data/constants";
 import Pill from "./ui/Pill";
 
-export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, border, text, muted, goals = {}, onReviewChecklist, mob=false }) {
+export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, border, text, muted, goals = {}, onReviewChecklist, mob=false, onRefresh, refreshing=false }) {
   const [selDay, setSelDay]     = useState(null);
   const [filter, setFilter]     = useState("all");
   const [monthIdx, setMonthIdx] = useState(CURRENT_MONTH_IDX);
@@ -57,7 +57,16 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
             </button>
           </div>
         </div>
-        {/* Site filter */}
+        {/* Refresh + Site filter */}
+        <div style={{ display:"flex", gap: mob ? 4 : 6, flexWrap:"wrap", alignItems:"center" }}>
+          {onRefresh && (
+            <button onClick={onRefresh} disabled={refreshing}
+              style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, fontSize:11, fontWeight:700, color:refreshing?"#9CA3AF":"#374151", cursor:refreshing?"not-allowed":"pointer" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation:refreshing?"spin 0.7s linear infinite":"none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              {refreshing ? "Syncing…" : "Sync Wix"}
+            </button>
+          )}
+        </div>
         <div style={{ display:"flex", gap: mob ? 4 : 6, flexWrap:"wrap" }}>
           {[{id:"all",label:"All Sites",color:"#374151"}, ...Object.values(PROPS).map(p=>({id:p.id,label: mob ? p.short.split(" ")[0] : p.short,color:p.accent}))].map(f=>(
             <button key={f.id} onClick={()=>{ setFilter(f.id); setSelDay(null); }}
