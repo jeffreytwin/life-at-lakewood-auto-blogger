@@ -2,13 +2,14 @@ import { useState } from "react";
 import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
 
-export default function AccountModal({ user, onUpdate, goals, setGoals, darkMode, setDarkMode, onClose, onSignOut }) {
-  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "display"
+export default function AccountModal({ user, onUpdate, goals, setGoals, writingStyle, setWritingStyle, darkMode, setDarkMode, onClose, onSignOut }) {
+  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display"
   const [name, setName]         = useState(user.name);
   const [email, setEmail]       = useState(user.email);
   const [preview, setPreview]   = useState(user.avatar);
   const [saved, setSaved]       = useState(false);
   const [localGoals, setLocalGoals] = useState({...goals});
+  const [localStyle, setLocalStyle] = useState(writingStyle || "");
 
   const handleImage = (e) => {
     const file = e.target.files?.[0];
@@ -21,6 +22,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, darkMode
   const handleSave = () => {
     onUpdate({ name, email, avatar: preview });
     setGoals(localGoals);
+    if (setWritingStyle) setWritingStyle(localStyle);
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
@@ -41,7 +43,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, darkMode
           </div>
           {/* Tabs */}
           <div style={{ display:"flex", gap:0 }}>
-            {[["profile","Profile"],["goals","Monthly Goals"],["display","Display"]].map(([t,label]) => (
+            {[["profile","Profile"],["goals","Monthly Goals"],["writing","Writing Style"],["display","Display"]].map(([t,label]) => (
               <button key={t} onClick={()=>setTab(t)} style={{ padding:"8px 16px", border:"none", borderBottom:`2px solid ${tab===t?"#3B0764":"transparent"}`, background:"none", fontSize:13, fontWeight:tab===t?700:500, color:tab===t?"#3B0764":"#6B7280", cursor:"pointer", transition:"all 0.15s" }}>
                 {label}
               </button>
@@ -109,6 +111,26 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, darkMode
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "writing" && (
+            <div>
+              <p style={{ fontSize:13, color:"#6B7280", margin:"0 0 16px" }}>
+                Guide how Claude writes your articles. Describe your preferred tone, audience, formatting, or any specific instructions.
+              </p>
+              <textarea
+                value={localStyle}
+                onChange={e => setLocalStyle(e.target.value)}
+                placeholder={"Example:\n- Tone: Conversational and trustworthy, like a knowledgeable friend\n- Audience: Home buyers aged 30-65, relocating from out of state\n- Always mention CDD fees and HOA costs\n- End with a soft CTA to contact the team\n- Use bullet points for key facts\n- Avoid salesy language"}
+                rows={10}
+                style={{ width:"100%", padding:"12px 14px", border:"1.5px solid #E5E7EB", borderRadius:10, fontSize:13, color:"#111827", outline:"none", resize:"vertical", fontFamily:"inherit", lineHeight:1.6, background:"#FAFAFA" }}
+                onFocus={e=>e.target.style.borderColor="#A855F7"}
+                onBlur={e=>e.target.style.borderColor="#E5E7EB"}
+              />
+              <div style={{ fontSize:11, color:"#9CA3AF", marginTop:8 }}>
+                These preferences will be included in every article generation prompt sent to Claude.
               </div>
             </div>
           )}

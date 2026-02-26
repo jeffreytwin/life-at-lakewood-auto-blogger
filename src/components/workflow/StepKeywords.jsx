@@ -16,19 +16,13 @@ Respond ONLY with a JSON array (no markdown, no backticks):
 ]
 Use realistic estimated volume (500–3000) and difficulty (15–45). Intent must be one of: Informational, Commercial, Transactional.`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("/api/claude/keywords", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 600,
-      messages: [{ role: "user", content: prompt }]
-    })
+    body: JSON.stringify({ prompt })
   });
   const data = await res.json();
-  const text = data.content?.map(b => b.text || "").join("") || "";
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  return data.keywords;
 }
 
 export default function StepKeywords({ prop, onNext }) {

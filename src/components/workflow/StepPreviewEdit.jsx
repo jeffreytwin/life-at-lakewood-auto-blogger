@@ -1,41 +1,10 @@
 import { useState } from "react";
 import useMobile from "../../hooks/useMobile";
 
-function generateMockArticleContent(article, prop) {
-  const title = article.title;
-  const kw = article.kw;
-  const location = prop.short;
-  return {
-    seoTitle: `${title} | ${location} Real Estate Guide`,
-    metaDescription: `Discover everything you need to know about ${kw}. This comprehensive guide covers key facts, comparisons, and insider tips for ${location}, Florida home buyers.`,
-    slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-    sections: [
-      {
-        heading: "Introduction",
-        body: `If you've been researching ${kw}, you're not alone — it's one of the most searched topics among buyers exploring ${location}, Florida. Whether you're relocating from out of state, upgrading from a nearby area, or looking at investment opportunities, this guide will walk you through what you actually need to know.\n\nWe've pulled together data from Google Search Console, local MLS listings, and on-the-ground experience to give you an honest, up-to-date picture.`
-      },
-      {
-        heading: "Key Facts & Overview",
-        body: `${location} has seen significant growth in the past two years, with new master-planned communities, expanding commercial corridors, and improved infrastructure drawing families and retirees alike.\n\nHere are the essential numbers:\n• Median home price: $385,000 – $520,000 depending on the community\n• Average days on market: 32 days\n• Property tax rate: approximately 1.1% of assessed value\n• Top school ratings: Several A-rated elementary and middle schools in the district`
-      },
-      {
-        heading: "What Buyers Should Know",
-        body: `Before making a move, there are a few things specific to ${location} that most online guides skip. CDD fees can add $150–$300/month on top of your HOA, and they're often not included in the mortgage estimate you see online.\n\nNew construction timelines have improved — most builders are quoting 8–12 months for completion — but lot premiums on lakefront and preserve-view properties have climbed 15–20% since last year.\n\nIf you're comparing with other Southwest Florida communities, the main advantages here are newer infrastructure, walkability in the town center areas, and access to both Gulf beaches and I-75 for commuters.`
-      },
-      {
-        heading: "Our Recommendation",
-        body: `For buyers seriously considering ${kw}, we recommend starting with a visit to the community welcome centers, where you can walk model homes and speak directly with builder reps. Pair that with a drive through the established neighborhoods during evening hours to get a feel for the day-to-day community vibe.\n\nReady to explore your options? Contact our team for a personalized neighborhood match based on your budget, timeline, and lifestyle preferences.`
-      }
-    ]
-  };
-}
-
-export default function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
+export default function StepPreviewEdit({ prop, articles, initialContents, onApprove, onBack }) {
   const mob = useMobile();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [articleContents, setArticleContents] = useState(() =>
-    articles.map(a => generateMockArticleContent(a, prop))
-  );
+  const [articleContents, setArticleContents] = useState(() => initialContents || []);
   const [revisionInput, setRevisionInput] = useState("");
   const [revising, setRevising] = useState(false);
   const [revisionHistory, setRevisionHistory] = useState(() => articles.map(() => []));
@@ -72,21 +41,40 @@ export default function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
     newHistory[activeIndex] = [...(newHistory[activeIndex] || []), revisionInput.trim()];
     setRevisionHistory(newHistory);
 
-    // Simulate a revision (in production, this would call the Claude API)
-    await new Promise(r => setTimeout(r, 2000));
-
-    // Apply a mock revision — modify the last section's body to show the edit was applied
-    setArticleContents(prev => {
-      const updated = [...prev];
-      const c = { ...updated[activeIndex] };
-      const secs = [...c.sections];
-      const lastSec = { ...secs[secs.length - 1] };
-      lastSec.body = lastSec.body + `\n\n[Revised based on your feedback: "${revisionInput.trim()}"]`;
-      secs[secs.length - 1] = lastSec;
-      c.sections = secs;
-      updated[activeIndex] = c;
-      return updated;
-    });
+    try {
+      const res = await fetch("/api/claude/revise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          articleContent: articleContents[activeIndex],
+          revisionRequest: revisionInput.trim(),
+          property: prop.short,
+        }),
+      });
+      if (res.ok) {
+        const revised = await res.json();
+        setArticleContents(prev => {
+          const updated = [...prev];
+          updated[activeIndex] = revised;
+          return updated;
+        });
+      } else {
+        throw new Error("Revision failed");
+      }
+    } catch (e) {
+      // Fallback: append a note so user knows revision was requested
+      setArticleContents(prev => {
+        const updated = [...prev];
+        const c = { ...updated[activeIndex] };
+        const secs = [...c.sections];
+        const lastSec = { ...secs[secs.length - 1] };
+        lastSec.body = lastSec.body + `\n\n[Revision requested: "${revisionInput.trim()}" — API unavailable, please edit manually]`;
+        secs[secs.length - 1] = lastSec;
+        c.sections = secs;
+        updated[activeIndex] = c;
+        return updated;
+      });
+    }
 
     setRevisionInput("");
     setRevising(false);
@@ -269,4 +257,3 @@ export default function StepPreviewEdit({ prop, articles, onApprove, onBack }) {
   );
 }
 
-export { generateMockArticleContent };

@@ -21,20 +21,13 @@ Respond ONLY with a JSON array (no markdown, no backticks, no explanation):
   }
 ]`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("/api/claude/articles", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }]
-    })
+    body: JSON.stringify({ prompt, keyword })
   });
   const data = await res.json();
-  const text = data.content?.map(b => b.text || "").join("") || "";
-  const clean = text.replace(/```json|```/g, "").trim();
-  const arr = JSON.parse(clean);
-  return arr.map((s, i) => ({ ...s, kw: keyword, id: `${keyword}_${Date.now()}_${i}` }));
+  return data.suggestions.map((s, i) => ({ ...s, kw: keyword, id: `${keyword}_${Date.now()}_${i}` }));
 }
 
 export default function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, onConfirm, onBack, onSkip, existingChoice }) {

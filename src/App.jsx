@@ -17,6 +17,7 @@ export default function App() {
   const [showAccount, setShowAccount] = useState(false);
   const [darkMode, setDarkMode]       = useState(() => { try { return localStorage.getItem("lal_darkMode") === "true"; } catch { return false; } });
   const [goals, setGoals]             = useState(() => { try { const s = localStorage.getItem("lal_goals"); return s ? JSON.parse(s) : { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } catch { return { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } });
+  const [writingStyle, setWritingStyle] = useState(() => { try { return localStorage.getItem("lal_writingStyle") || ""; } catch { return ""; } });
 
   // Check for existing Supabase session on mount
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem("lal_darkMode", String(darkMode)); }, [darkMode]);
   useEffect(() => { localStorage.setItem("lal_goals", JSON.stringify(goals)); }, [goals]);
+  useEffect(() => { localStorage.setItem("lal_writingStyle", writingStyle); }, [writingStyle]);
   const [view, setView]               = useState("calendar");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mob = useMobile();
@@ -100,7 +102,7 @@ export default function App() {
         }
       `}</style>
 
-      {showAccount && <AccountModal user={user} onUpdate={u=>setUser(u)} goals={goals} setGoals={setGoals} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={handleSignOut} />}
+      {showAccount && <AccountModal user={user} onUpdate={u=>setUser(u)} goals={goals} setGoals={setGoals} writingStyle={writingStyle} setWritingStyle={setWritingStyle} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={handleSignOut} />}
 
       {/* Sidebar overlay */}
       {mob && sidebarOpen && (

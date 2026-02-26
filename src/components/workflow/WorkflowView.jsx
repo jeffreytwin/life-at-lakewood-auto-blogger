@@ -20,6 +20,7 @@ export default function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", vie
   const [selectedKeywords, setSelectedKeywords] = useState([]);
   const [kwPageIndex, setKwPageIndex]   = useState(0);
   const [chosenArticles, setChosenArticles] = useState(directReviewArticle ? [directReviewArticle] : []);
+  const [generatedContents, setGeneratedContents] = useState(null);
 
   const handleKeywordsNext = (kws) => {
     setSelectedKeywords(kws);
@@ -98,8 +99,8 @@ export default function WorkflowView({ prop, onBack, dm=false, bg="#F2F1ED", vie
         />
       )}
 
-      {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} onDone={()=>setStep(3)} />}
-      {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} onApprove={() => setStep(4)} onBack={() => setStep(2)} />}
+      {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} articles={chosenArticles} onDone={(contents) => { setGeneratedContents(contents); setStep(3); }} />}
+      {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} initialContents={generatedContents} onApprove={() => setStep(4)} onBack={() => { setGeneratedContents(null); setStep(2); }} />}
       {step === 4 && <StepReview prop={prop} articles={chosenArticles} onDone={onBack} onGenerateMore={() => { setStep(0); setSelectedKeywords([]); setKwPageIndex(0); }} />}
     </div>
   );
