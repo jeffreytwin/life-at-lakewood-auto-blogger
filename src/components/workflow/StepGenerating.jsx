@@ -4,6 +4,7 @@ export default function StepGenerating({ prop, count, articles, onDone }) {
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState(0);
   const [genError, setGenError] = useState(null);
+  const doneRef = useRef(false);
   const fetchedRef = useRef(false);
   const stages = [
     "Fetching top-ranking competitors for each keyword…",
@@ -16,14 +17,16 @@ export default function StepGenerating({ prop, count, articles, onDone }) {
     "✅ Done! Articles ready for your review.",
   ];
 
-  // Animate the progress bar independently
+  // Animate the progress bar — ramps to 85% quickly, then slows asymptotically
   useEffect(() => {
-    if (genError) return;
+    if (genError || doneRef.current) return;
     const t = setInterval(() => {
       setProgress(p => {
-        // Cap at 90% until the real API calls finish
-        if (p >= 90) { clearInterval(t); return 90; }
-        return p + 0.8;
+        if (doneRef.current) { clearInterval(t); return 100; }
+        if (p < 85) return p + 0.8;
+        // After 85%, slow down — keeps moving so user sees activity
+        const remaining = 99 - p;
+        return p + remaining * 0.008;
       });
     }, 70);
     return () => clearInterval(t);
@@ -38,23 +41,34 @@ export default function StepGenerating({ prop, count, articles, onDone }) {
       try {
         const results = await Promise.all(
           articles.map(async (article) => {
-            const res = await fetch("/api/claude/generate", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                title: article.title,
-                keyword: article.kw,
-                property: prop.short,
-                propertyUrl: prop.url,
-                blogUrl: prop.blog,
-              }),
-            });
-            if (!res.ok) throw new Error(`Generation failed: ${res.status}`);
-            return res.json();
+            // 2-minute timeout per article to prevent indefinite hanging
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 120000);
+            try {
+              const res = await fetch("/api/claude/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                signal: controller.signal,
+                body: JSON.stringify({
+                  title: article.title,
+                  keyword: article.kw,
+                  property: prop.short,
+                  propertyUrl: prop.url,
+                  blogUrl: prop.blog,
+                }),
+              });
+              clearTimeout(timeout);
+              if (!res.ok) throw new Error(`Generation failed: ${res.status}`);
+              return res.json();
+            } catch (e) {
+              clearTimeout(timeout);
+              throw e;
+            }
           })
         );
 
         // All articles generated — animate to 100% then call onDone
+        doneRef.current = true;
         setProgress(100);
         setTimeout(() => onDone(results), 1200);
       } catch (err) {
@@ -76,6 +90,7 @@ export default function StepGenerating({ prop, count, articles, onDone }) {
             ],
           };
         });
+        doneRef.current = true;
         setProgress(100);
         setTimeout(() => onDone(mockResults), 1200);
       }
