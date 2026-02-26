@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import useMobile from "./hooks/useMobile";
 import { supabase } from "./lib/supabase";
 import { PROPS } from "./data/properties";
-import { ARTICLES } from "./data/mock-articles";
+import { ARTICLES as MOCK_ARTICLES } from "./data/mock-articles";
 import NavBtn from "./components/ui/NavBtn";
 import PropBtn from "./components/ui/PropBtn";
 import CalendarView from "./components/CalendarView";
@@ -18,6 +18,29 @@ export default function App() {
   const [darkMode, setDarkMode]       = useState(() => { try { return localStorage.getItem("lal_darkMode") === "true"; } catch { return false; } });
   const [goals, setGoals]             = useState(() => { try { const s = localStorage.getItem("lal_goals"); return s ? JSON.parse(s) : { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } catch { return { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } });
   const [writingStyle, setWritingStyle] = useState(() => { try { return localStorage.getItem("lal_writingStyle") || ""; } catch { return ""; } });
+  const [articles, setArticles]       = useState(MOCK_ARTICLES);
+  const [articlesLoading, setArticlesLoading] = useState(false);
+
+  // Fetch articles from Wix via our API
+  const refreshArticles = useCallback(async () => {
+    setArticlesLoading(true);
+    try {
+      const res = await fetch("/api/wix/posts");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.posts && data.posts.length > 0) {
+          setArticles(data.posts);
+        }
+        // If no posts from API, keep mock data as fallback
+      }
+    } catch (e) {
+      console.warn("Could not fetch articles from Wix API, using local data:", e.message);
+    }
+    setArticlesLoading(false);
+  }, []);
+
+  // Fetch articles on mount
+  useEffect(() => { refreshArticles(); }, [refreshArticles]);
 
   // Check for existing Supabase session on mount
   useEffect(() => {
@@ -178,9 +201,9 @@ export default function App() {
         )}
         <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
-        {view === "calendar" && <CalendarView dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { const a = ARTICLES.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
-        {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
-        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} onBack={goBack} dm={dm} bg={bg} viewStr={view} mob={mob} />}
+        {view === "calendar" && <CalendarView articles={articles} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onReviewChecklist={(articleId) => { const a = articles.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
+        {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} articles={articles} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
+        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} articles={articles} onBack={() => { refreshArticles(); goBack(); }} dm={dm} bg={bg} viewStr={view} mob={mob} />}
         </div>
       </div>
     </div>

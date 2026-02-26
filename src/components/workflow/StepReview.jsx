@@ -1,15 +1,14 @@
 import { useState } from "react";
 import useMobile from "../../hooks/useMobile";
-import { ARTICLES } from "../../data/mock-articles";
 import Pill from "../ui/Pill";
 import { PROPS } from "../../data/properties";
 
-export default function StepReview({ prop, articles, onDone, onGenerateMore }) {
+export default function StepReview({ prop, articles, allArticles = [], onDone, onGenerateMore }) {
   const mob = useMobile();
   const [checked, setChecked] = useState({});
 
   // Merge workflow articles with existing drafts for this property
-  const draftArts = ARTICLES.filter(a => a.p === prop.id && a.status === "in_wix");
+  const draftArts = allArticles.filter(a => a.p === prop.id && a.status === "in_wix");
   const workflowIds = new Set(articles.map(a => a.id));
   const extraDrafts = draftArts.filter(a => !workflowIds.has(a.id));
   const allReviewArticles = [...articles, ...extraDrafts.map(a => ({ ...a, words: 1200 }))];

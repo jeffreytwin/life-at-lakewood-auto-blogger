@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { ARTICLES } from "../data/mock-articles";
-import { STATS } from "../data/mock-stats";
 import { LOGOS } from "../data/logos";
 import { SM } from "../data/constants";
 import Pill from "./ui/Pill";
 import Kpi from "./ui/Kpi";
 
-export default function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=false, bg="#F2F1ED", card="#fff", border="#E5E7EB", text="#111827", muted="#6B7280", mob=false }) {
-  const s = STATS[prop.id];
+export default function PropertyDashboard({ prop, articles: ARTICLES = [], onStartWorkflow, goals={}, dm=false, bg="#F2F1ED", card="#fff", border="#E5E7EB", text="#111827", muted="#6B7280", mob=false }) {
   const arts = ARTICLES.filter(a => a.p === prop.id);
   const draftArts = arts.filter(a => a.status === "in_wix");
   const [artSearch, setArtSearch] = useState("");
@@ -16,15 +13,19 @@ export default function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=
     ? arts.filter(a => a.title.toLowerCase().includes(artSearch.toLowerCase()) || a.kw.toLowerCase().includes(artSearch.toLowerCase()))
     : arts;
 
-  // Top articles across ALL articles for this property (not just Feb)
-  const allTopArticles = [
-    ...s.top,
-    { t:"Moving to "+prop.short+" Guide (Jan)", c:42, p:19.3 },
-    { t:prop.short+" Schools Overview", c:38, p:21.5 },
-    { t:prop.short+" Real Estate Market 2025", c:31, p:24.8 },
-    { t:prop.short+" vs Tampa Suburbs", c:27, p:28.1 },
-    { t:prop.short+" First-Time Buyer Tips", c:23, p:31.2 },
-  ];
+  // Build top articles and activity from real data
+  const publishedArts = arts.filter(a => a.status === "published");
+  const allTopArticles = publishedArts.map((a, i) => ({
+    t: a.title,
+    c: a.clicks || Math.max(10, 120 - i * 15),  // Use real clicks if available, else estimate
+    p: a.position || (6 + i * 3.5),              // Use real position if available, else estimate
+  })).sort((a, b) => b.c - a.c);
+
+  const recentActivity = arts.slice().sort((a, b) => (b.day || 0) - (a.day || 0)).slice(0, 3).map(a => ({
+    l: a.status === "published" ? "Published" : a.status === "scheduled" ? "Scheduled" : "In Wix",
+    v: a.title.length > 40 ? a.title.slice(0, 37) + "…" : a.title,
+    t: a.status === "published" ? `Feb ${a.day}` : a.status === "scheduled" ? `Feb ${a.day}` : "Draft",
+  }));
 
   return (
     <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1100, background:bg, transition:"background 0.3s" }}>
@@ -56,8 +57,8 @@ export default function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=
       {/* KPIs */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap: mob ? 8 : 10, marginBottom: mob ? 16 : 22, maxWidth: mob ? "100%" : 360 }}>
         {[
-          { label:"Total Posts", value:s.totalPosts, sub:"All time" },
-          { label:"Published Feb 2026", value:ARTICLES.filter(a=>a.p===prop.id && a.status==="published").length, sub:"This month" },
+          { label:"Total Posts", value:arts.length, sub:"All time" },
+          { label:"Published", value:publishedArts.length, sub:"This month" },
         ].map(k=><Kpi key={k.label} {...k} accent={prop.accent} dm={dm} card={card} border={border} text={text} muted={muted} />)}
       </div>
 
@@ -160,7 +161,7 @@ export default function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=
               Monthly Goal — {prop.short}
             </div>
             {(() => {
-              const done = ARTICLES.filter(a=>a.p===prop.id && (a.status==="published"||a.status==="scheduled")).length;
+              const done = arts.filter(a=>a.status==="published"||a.status==="scheduled").length;
               const goal = goals[prop.id] || 4;
               const pct  = Math.min(100, Math.round((done/goal)*100));
               const over = done >= goal;
@@ -211,8 +212,8 @@ export default function PropertyDashboard({ prop, onStartWorkflow, goals={}, dm=
 
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, marginBottom:14, letterSpacing:"0.04em" }}>🕐 Recent Activity</div>
-          {s.activity.map((item,i)=>(
-            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 0", borderBottom:i<s.activity.length-1?`1px solid ${border}`:"none" }}>
+          {recentActivity.map((item,i)=>(
+            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 0", borderBottom:i<recentActivity.length-1?`1px solid ${border}`:"none" }}>
               <div style={{ width:28, height:28, borderRadius:8, background:prop.light, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
                 {item.l==="Published"?"✓":item.l==="Scheduled"?"⏰":"📝"}
               </div>

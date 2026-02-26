@@ -83,3 +83,27 @@ export async function requestRevision(articleContent, revisionRequest, prop) {
   });
   return res.json();
 }
+
+// --- Wix API ---
+
+export async function fetchWixPosts(site) {
+  const url = site
+    ? `${API_BASE}/api/wix/posts?site=${site}`
+    : `${API_BASE}/api/wix/posts`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.posts || [];
+}
+
+export async function createWixDraft({ propertyId, title, sections, seoTitle, metaDescription, slug }) {
+  const res = await fetch(`${API_BASE}/api/wix/posts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ propertyId, title, sections, seoTitle, metaDescription, slug }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || `Failed to create Wix draft (${res.status})`);
+  }
+  return res.json();
+}

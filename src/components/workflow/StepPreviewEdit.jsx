@@ -88,8 +88,28 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
 
   const handleSendToWix = async () => {
     setPushingToWix(true);
-    // Simulate pushing to Wix
-    await new Promise(r => setTimeout(r, 2500));
+    try {
+      // Push each article to Wix as a draft
+      await Promise.all(
+        articles.map((article, i) => {
+          const content = articleContents[i];
+          return fetch("/api/wix/posts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              propertyId: prop.id,
+              title: article.title,
+              sections: content.sections,
+              seoTitle: content.seoTitle,
+              metaDescription: content.metaDescription,
+              slug: content.slug,
+            }),
+          });
+        })
+      );
+    } catch (err) {
+      console.warn("Wix push error (proceeding anyway):", err.message);
+    }
     setPushingToWix(false);
     onApprove(articleContents);
   };

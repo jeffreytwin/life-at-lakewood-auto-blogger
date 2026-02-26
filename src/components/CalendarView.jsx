@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { ARTICLES } from "../data/mock-articles";
 import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
 import { SM, TODAY, MONTH_DATA, CURRENT_MONTH_IDX } from "../data/constants";
 import Pill from "./ui/Pill";
 
-export default function CalendarView({ dm, bg, card, border, text, muted, goals = {}, onReviewChecklist, mob=false }) {
+export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, border, text, muted, goals = {}, onReviewChecklist, mob=false }) {
   const [selDay, setSelDay]     = useState(null);
   const [filter, setFilter]     = useState("all");
   const [monthIdx, setMonthIdx] = useState(CURRENT_MONTH_IDX);
