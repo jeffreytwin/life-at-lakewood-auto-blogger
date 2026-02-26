@@ -4,17 +4,30 @@ export const SM = {
   in_wix:   { label:"In Wix Draft", dot:"#F59E0B", bg:"#FFFBEB", tx:"#92400E" },
 };
 
-export const TODAY = 24;
-export const DAYS  = 28;
-export const START_DOW = 0;
+// Dynamic date calculations
+const now = new Date();
+export const TODAY = now.getDate();
 
-// Month data: [name, year, days, startDow]
-export const MONTH_DATA = [
-  ["January",  2026, 31, 4],
-  ["February", 2026, 28, 0],
-  ["March",    2026, 31, 0],
-  ["April",    2026, 30, 3],
-  ["May",      2026, 31, 5],
-  ["June",     2026, 30, 1],
-];
-export const CURRENT_MONTH_IDX = 1; // February is default
+// Generate MONTH_DATA dynamically: 6 months back + current + 6 months ahead
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function getDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getStartDow(year, month) {
+  return new Date(year, month, 1).getDay();
+}
+
+const monthRange = [];
+let currentIdx = 0;
+for (let offset = -3; offset <= 6; offset++) {
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const m = d.getMonth();
+  const y = d.getFullYear();
+  if (offset === 0) currentIdx = monthRange.length;
+  monthRange.push([MONTH_NAMES[m], y, getDaysInMonth(y, m), getStartDow(y, m)]);
+}
+
+export const MONTH_DATA = monthRange;
+export const CURRENT_MONTH_IDX = currentIdx;

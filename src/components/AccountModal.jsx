@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
+import { supabase } from "../lib/supabase";
 
 export default function AccountModal({ user, onUpdate, goals, setGoals, writingStyle, setWritingStyle, darkMode, setDarkMode, onClose, onSignOut }) {
   const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display" | "connections"
@@ -10,6 +11,23 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const [saved, setSaved]       = useState(false);
   const [localGoals, setLocalGoals] = useState({...goals});
   const [localStyle, setLocalStyle] = useState(writingStyle || "");
+  const [newPassword, setNewPassword]     = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwMsg, setPwMsg]       = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+
+  const handlePasswordChange = async () => {
+    if (!newPassword || newPassword.length < 6) { setPwMsg("Password must be at least 6 characters"); return; }
+    if (newPassword !== confirmPassword) { setPwMsg("Passwords don't match"); return; }
+    setPwLoading(true);
+    setPwMsg("");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPwLoading(false);
+    if (error) { setPwMsg(error.message); return; }
+    setPwMsg("Password updated!");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
 
   const handleImage = (e) => {
     const file = e.target.files?.[0];
@@ -84,6 +102,23 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                       onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
                   </div>
                 ))}
+              </div>
+
+              {/* Password change */}
+              <div style={{ marginTop:20, padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:"#374151", marginBottom:12 }}>Change Password</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  <input value={newPassword} onChange={e=>{ setNewPassword(e.target.value); setPwMsg(""); }} type="password" placeholder="New password"
+                    style={inp} onFocus={e=>e.target.style.borderColor="#A855F7"} onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
+                  <input value={confirmPassword} onChange={e=>{ setConfirmPassword(e.target.value); setPwMsg(""); }} type="password" placeholder="Confirm new password"
+                    style={inp} onFocus={e=>e.target.style.borderColor="#A855F7"} onBlur={e=>e.target.style.borderColor="#E5E7EB"}
+                    onKeyDown={e=>{ if(e.key==="Enter") handlePasswordChange(); }} />
+                </div>
+                {pwMsg && <div style={{ fontSize:11, color:pwMsg==="Password updated!"?"#22C55E":"#EF4444", marginTop:6 }}>{pwMsg}</div>}
+                <button onClick={handlePasswordChange} disabled={pwLoading}
+                  style={{ marginTop:8, padding:"7px 16px", background:"#3B0764", color:"#fff", border:"none", borderRadius:7, fontSize:11, fontWeight:700, cursor:pwLoading?"not-allowed":"pointer" }}>
+                  {pwLoading ? "Updating…" : "Update Password"}
+                </button>
               </div>
             </div>
           )}

@@ -7,6 +7,7 @@ export default function SignInPage({ onSignIn }) {
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [remember, setRemember] = useState(true);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) { setError("Please fill in all fields."); return; }
@@ -70,6 +71,13 @@ export default function SignInPage({ onSignIn }) {
                     onBlur={e=>e.target.style.borderColor="#E5E7EB"}
                     onKeyDown={e=>{ if(e.key==="Enter") handleSubmit(); }} />
                 </div>
+              </div>
+
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                <div onClick={()=>setRemember(r=>!r)} style={{ width:16, height:16, borderRadius:4, border:`2px solid ${remember?"#3B0764":"#D1D5DB"}`, background:remember?"#3B0764":"#fff", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                  {remember && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span onClick={()=>setRemember(r=>!r)} style={{ fontSize:12, color:"#6B7280", cursor:"pointer", userSelect:"none" }}>Remember me</span>
               </div>
 
               {error && <div style={{ fontSize:12, color:"#EF4444", marginBottom:14, padding:"8px 12px", background:"#FEF2F2", borderRadius:7 }}>{error}</div>}
