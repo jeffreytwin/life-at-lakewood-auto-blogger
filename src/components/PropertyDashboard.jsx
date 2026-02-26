@@ -9,23 +9,51 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
   const draftArts = arts.filter(a => a.status === "in_wix");
   const [artSearch, setArtSearch] = useState("");
   const [showAllArticles, setShowAllArticles] = useState(false);
+  const [showAllScheduled, setShowAllScheduled] = useState(false);
+  const [showAllDrafts, setShowAllDrafts] = useState(false);
   const filteredArts = artSearch.trim()
     ? arts.filter(a => a.title.toLowerCase().includes(artSearch.toLowerCase()) || a.kw.toLowerCase().includes(artSearch.toLowerCase()))
     : arts;
 
+  // Current month for KPI and goal counting
+  const now = new Date();
+  const curMonth = now.getMonth();
+  const curYear = now.getFullYear();
+
   // Build top articles and activity from real data
   const publishedArts = arts.filter(a => a.status === "published");
+  const publishedThisMonth = publishedArts.filter(a => a.month === curMonth && a.year === curYear);
   const allTopArticles = publishedArts.map((a, i) => ({
     t: a.title,
-    c: a.clicks || Math.max(10, 120 - i * 15),  // Use real clicks if available, else estimate
-    p: a.position || (6 + i * 3.5),              // Use real position if available, else estimate
+    c: a.clicks || Math.max(10, 120 - i * 15),
+    p: a.position || (6 + i * 3.5),
   })).sort((a, b) => b.c - a.c);
 
-  const recentActivity = arts.slice().sort((a, b) => (b.day || 0) - (a.day || 0)).slice(0, 3).map(a => ({
+  const recentActivity = arts.slice().sort((a, b) => {
+    const dateA = a.year != null ? new Date(a.year, a.month || 0, a.day || 1) : new Date(0);
+    const dateB = b.year != null ? new Date(b.year, b.month || 0, b.day || 1) : new Date(0);
+    return dateB - dateA;
+  }).slice(0, 3).map(a => ({
     l: a.status === "published" ? "Published" : a.status === "scheduled" ? "Scheduled" : "In Wix",
     v: a.title.length > 40 ? a.title.slice(0, 37) + "…" : a.title,
-    t: a.status === "published" || a.status === "scheduled" ? `${SHORT_MONTH_NAMES[a.month] || "—"} ${a.day}` : "Draft",
+    t: a.status === "published" || a.status === "scheduled"
+      ? `${SHORT_MONTH_NAMES[a.month] || "—"} ${a.day}, ${a.year || ""}`
+      : "Draft",
   }));
+
+  // Article link: use Wix URL if available, otherwise build /post/ path
+  const getArticleUrl = (a) => {
+    if (a.url) return a.url;
+    const slug = a.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return `https://${prop.url}/post/${slug}`;
+  };
+
+  // Scheduled + published articles for display (with 4-item limit)
+  const schedPubArts = filteredArts.filter(a => a.status === "published" || a.status === "scheduled");
+  const visibleSchedPub = showAllScheduled ? schedPubArts : schedPubArts.slice(0, 4);
+
+  // Drafts for display (with 4-item limit)
+  const visibleDrafts = showAllDrafts ? draftArts : draftArts.slice(0, 4);
 
   return (
     <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:1100, background:bg, transition:"background 0.3s" }}>
@@ -58,7 +86,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
       <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap: mob ? 8 : 10, marginBottom: mob ? 16 : 22, maxWidth: mob ? "100%" : 360 }}>
         {[
           { label:"Total Posts", value:arts.length, sub:"All time" },
-          { label:"Published", value:publishedArts.length, sub:"This month" },
+          { label:"Published", value:publishedThisMonth.length, sub:"This month" },
         ].map(k=><Kpi key={k.label} {...k} accent={prop.accent} dm={dm} card={card} border={border} text={text} muted={muted} />)}
       </div>
 
@@ -78,20 +106,20 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
               onFocus={e=>e.target.style.borderColor=prop.accent} onBlur={e=>e.target.style.borderColor=border} />
           </div>
           <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(240px,1fr))", gap: mob ? 8 : 10 }}>
-            {filteredArts.filter(a=>a.status==="published"||a.status==="scheduled").length === 0 ? (
+            {schedPubArts.length === 0 ? (
               <div style={{ gridColumn:"1/-1", padding:"24px", textAlign:"center", color:muted, fontSize:13 }}>
                 {artSearch ? `No articles match "${artSearch}"` : "No scheduled or published articles yet"}
               </div>
-            ) : filteredArts.filter(a=>a.status==="published"||a.status==="scheduled").map(a=>(
+            ) : visibleSchedPub.map(a=>(
               <div key={a.id} style={{ border:`1px solid ${border}`, borderRadius:10, padding:"12px 14px", background:a.status==="published"?(dm?"#1a2535":"#FAFAFA"):card }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:muted }}>{SHORT_MONTH_NAMES[a.month] || "—"} {a.day}</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted }}>{SHORT_MONTH_NAMES[a.month] || "—"} {a.day}{a.year ? `, ${a.year}` : ""}</div>
                   <Pill status={a.status} />
                 </div>
                 <div style={{ fontSize:13, fontWeight:700, color:text, lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
                 <div style={{ fontSize:11, color:muted, marginBottom:8 }}>🎯 {a.kw}</div>
                 {a.status === "published" && (
-                  <a href={"https://"+prop.blog+"/"+a.title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")} target="_blank" rel="noreferrer"
+                  <a href={getArticleUrl(a)} target="_blank" rel="noreferrer"
                     style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:700, color:prop.color, background:prop.light, padding:"5px 10px", borderRadius:6, textDecoration:"none" }}>
                     View Article ↗
                   </a>
@@ -105,6 +133,12 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
               </div>
             ))}
           </div>
+          {schedPubArts.length > 4 && (
+            <button onClick={() => setShowAllScheduled(s => !s)}
+              style={{ display:"block", width:"100%", marginTop:12, padding:"8px", background:"none", border:`1px solid ${border}`, borderRadius:8, fontSize:12, fontWeight:700, color:prop.accent, cursor:"pointer" }}>
+              {showAllScheduled ? "Show Less" : `See All ${schedPubArts.length} Articles`}
+            </button>
+          )}
         </div>
 
         {/* Needs Attention + Monthly Goal */}
@@ -130,16 +164,16 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:10, flex:1 }}>
-                {draftArts.map(a => (
+                {visibleDrafts.map(a => (
                   <div key={a.id} style={{ border:"1px solid #FDE68A", borderRadius:10, padding:"12px 14px", background:dm?"#1c1a0a":"#FFFBEB" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:5 }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:muted }}>{SHORT_MONTH_NAMES[a.month] || "—"} {a.day}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:muted }}>{SHORT_MONTH_NAMES[a.month] || "—"} {a.day}{a.year ? `, ${a.year}` : ""}</div>
                       <Pill status={a.status} />
                     </div>
                     <div style={{ fontSize:13, fontWeight:700, color:text, lineHeight:1.4, marginBottom:6 }}>{a.title}</div>
                     <div style={{ fontSize:11, color:muted, marginBottom:10 }}>🎯 {a.kw}</div>
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                      <a href={prop.wixDash} target="_blank" rel="noreferrer"
+                      <a href={prop.wixDrafts || prop.wixDash} target="_blank" rel="noreferrer"
                         style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"6px 11px", background:prop.color, color:"#fff", borderRadius:7, textDecoration:"none", fontSize:11, fontWeight:800 }}>
                         Open in Wix
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -151,17 +185,27 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
                     </div>
                   </div>
                 ))}
+                {draftArts.length > 4 && (
+                  <button onClick={() => setShowAllDrafts(s => !s)}
+                    style={{ padding:"8px", background:"none", border:`1px solid #FDE68A`, borderRadius:8, fontSize:12, fontWeight:700, color:"#92400E", cursor:"pointer" }}>
+                    {showAllDrafts ? "Show Less" : `See All ${draftArts.length} Drafts`}
+                  </button>
+                )}
               </div>
             )}
           </div>
 
-          {/* Monthly Goal Progress for this property */}
+          {/* Monthly Goal Progress for this property — THIS MONTH ONLY */}
           <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"16px 18px" }}>
             <div style={{ fontSize:11, fontWeight:700, color:muted, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:12 }}>
               Monthly Goal — {prop.short}
             </div>
             {(() => {
-              const done = arts.filter(a=>a.status==="published"||a.status==="scheduled").length;
+              const thisMonthArts = arts.filter(a =>
+                (a.status === "published" || a.status === "scheduled") &&
+                a.month === curMonth && a.year === curYear
+              );
+              const done = thisMonthArts.length;
               const goal = goals[prop.id] || 4;
               const pct  = Math.min(100, Math.round((done/goal)*100));
               const over = done >= goal;
@@ -188,12 +232,12 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
         </div>
       </div>
 
-      {/* Top Articles + Recent Activity — now at the bottom */}
+      {/* Top Articles + Recent Activity */}
       <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16 }}>
         <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, letterSpacing:"0.04em" }}>🏆 Top Articles (All Time)</div>
-            {!showAllArticles && <button onClick={()=>setShowAllArticles(true)} style={{ fontSize:11, fontWeight:700, color:prop.accent, background:"none", border:"none", cursor:"pointer", padding:0 }}>See More →</button>}
+            {allTopArticles.length > 3 && !showAllArticles && <button onClick={()=>setShowAllArticles(true)} style={{ fontSize:11, fontWeight:700, color:prop.accent, background:"none", border:"none", cursor:"pointer", padding:0 }}>See More →</button>}
             {showAllArticles && <button onClick={()=>setShowAllArticles(false)} style={{ fontSize:11, fontWeight:700, color:muted, background:"none", border:"none", cursor:"pointer", padding:0 }}>Show Less</button>}
           </div>
           {(showAllArticles ? allTopArticles : allTopArticles.slice(0, 3)).map((a,i)=>(

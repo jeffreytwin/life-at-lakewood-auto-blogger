@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-export default function StepGenerating({ prop, count, articles, onDone }) {
+export default function StepGenerating({ prop, count, articles, onDone, writingStyle }) {
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState(0);
   const [genError, setGenError] = useState(null);
@@ -14,7 +14,7 @@ export default function StepGenerating({ prop, count, articles, onDone }) {
     "Adding internal links & calls to action…",
     "Writing SEO title, meta description & slug…",
     "Final quality checks & formatting…",
-    "✅ Done! Articles ready for your review.",
+    "So close! Adding polish and the finishing touches…",
   ];
 
   // Animate the progress bar — ramps to 85% quickly, then slows asymptotically
@@ -55,6 +55,7 @@ export default function StepGenerating({ prop, count, articles, onDone }) {
                   property: prop.short,
                   propertyUrl: prop.url,
                   blogUrl: prop.blog,
+                  writingStyle: writingStyle || "",
                 }),
               });
               clearTimeout(timeout);

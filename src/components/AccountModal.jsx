@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
 import { supabase } from "../lib/supabase";
@@ -15,6 +15,15 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwMsg, setPwMsg]       = useState("");
   const [pwLoading, setPwLoading] = useState(false);
+  const [gscConnected, setGscConnected] = useState(false);
+
+  // Check GSC connection status
+  useEffect(() => {
+    fetch("/api/google/keywords?property=lakewood")
+      .then(r => r.json())
+      .then(data => { if (data.connected) setGscConnected(true); })
+      .catch(() => {});
+  }, []);
 
   const handlePasswordChange = async () => {
     if (!newPassword || newPassword.length < 6) { setPwMsg("Password must be at least 6 characters"); return; }
@@ -187,18 +196,33 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                     <div style={{ fontSize:11, color:"#9CA3AF" }}>Real keyword data, clicks, impressions, and rankings</div>
                   </div>
                 </div>
-                <a
-                  href="/api/google/auth"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, cursor:"pointer" }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                  Connect Google Account
-                </a>
-                <div style={{ fontSize:10, color:"#9CA3AF", marginTop:8 }}>
-                  Grants read-only access to Search Console data for your blog properties.
-                </div>
+                {gscConnected ? (
+                  <div>
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#DCFCE7", borderRadius:8, fontSize:12, fontWeight:700, color:"#16A34A" }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      Connected
+                    </div>
+                    <div style={{ fontSize:10, color:"#9CA3AF", marginTop:8 }}>
+                      Read-only access to Search Console data is active.
+                      <a href="/api/google/auth" target="_blank" rel="noreferrer" style={{ marginLeft:6, color:"#4285F4", textDecoration:"none", fontWeight:700 }}>Reconnect</a>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <a
+                      href="/api/google/auth"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                      Connect Google Account
+                    </a>
+                    <div style={{ fontSize:10, color:"#9CA3AF", marginTop:8 }}>
+                      Grants read-only access to Search Console data for your blog properties.
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Wix */}

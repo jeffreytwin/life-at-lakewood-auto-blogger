@@ -59,7 +59,7 @@ export default function StepReview({ prop, articles, allArticles = [], onDone, o
               </div>
 
               <div style={{ display:"flex", gap:10 }}>
-                <a href={prop.wixDash} target="_blank" rel="noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 18px", background:prop.color, color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700 }}>
+                <a href={prop.wixDrafts || prop.wixDash} target="_blank" rel="noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 18px", background:prop.color, color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700 }}>
                   Open in Wix Blog Studio
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </a>

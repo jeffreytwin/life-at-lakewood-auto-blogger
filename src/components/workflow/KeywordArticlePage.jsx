@@ -116,7 +116,7 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
         {/* Add another keyword */}
         <div style={{ background:"#F9FAFB", borderRadius:10, padding:"12px 14px", marginBottom: generated ? 20 : 0 }}>
           <div style={{ fontSize:11, fontWeight:700, color:"#6B7280", marginBottom:8 }}>
-            Target multiple keywords in one article — add more keywords to combine them:
+            Optional: Target multiple keywords in one article — add more keywords to combine them:
           </div>
           <div style={{ display:"flex", gap:8 }}>
             <div style={{ flex:1, borderRadius:8, overflow:"hidden", border:`1.5px solid ${inputFocused?prop.accent:"#E5E7EB"}`, background:"#fff", display:"flex", transition:"border-color 0.15s", maxWidth:400 }}>
