@@ -4,7 +4,7 @@ import { SM, SHORT_MONTH_NAMES } from "../data/constants";
 import Pill from "./ui/Pill";
 import Kpi from "./ui/Kpi";
 
-export default function PropertyDashboard({ prop, articles: ARTICLES = [], onStartWorkflow, goals={}, dm=false, bg="#F2F1ED", card="#fff", border="#E5E7EB", text="#111827", muted="#6B7280", mob=false }) {
+export default function PropertyDashboard({ prop, articles: ARTICLES = [], onStartWorkflow, goals={}, dm=false, bg="#F2F1ED", card="#fff", border="#E5E7EB", text="#111827", muted="#6B7280", mob=false, onRefresh, refreshing=false }) {
   const arts = ARTICLES.filter(a => a.p === prop.id);
   const draftArts = arts.filter(a => a.status === "in_wix");
   const [artSearch, setArtSearch] = useState("");
@@ -70,6 +70,13 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
         <div style={{ display:"flex", gap:8, marginBottom:14 }}>
           <a href={"https://"+prop.url} target="_blank" rel="noreferrer" style={{ fontSize:12, color:muted, textDecoration:"none", background:dm?"#1E293B":"#F3F4F6", padding:"4px 10px", borderRadius:6, fontWeight:600 }}>🌐 {prop.url}</a>
           <a href={"https://"+prop.blog} target="_blank" rel="noreferrer" style={{ fontSize:12, color:prop.color, textDecoration:"none", background:prop.light, padding:"4px 10px", borderRadius:6, fontWeight:600 }}>✍️ {prop.blog}</a>
+          {onRefresh && (
+            <button onClick={onRefresh} disabled={refreshing}
+              style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"4px 10px", background:dm?"#1E293B":"#F3F4F6", border:"none", borderRadius:6, fontSize:12, fontWeight:600, color:refreshing?"#9CA3AF":muted, cursor:refreshing?"not-allowed":"pointer" }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation:refreshing?"spin 0.7s linear infinite":"none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              {refreshing ? "Syncing…" : "Sync"}
+            </button>
+          )}
         </div>
         <button onClick={() => onStartWorkflow("new")}
           style={{ display:"inline-flex", alignItems:"center", gap:10, padding: mob ? "14px 18px" : "12px 20px", background:prop.color, color:"#fff", border:"none", borderRadius:12, cursor:"pointer", width: mob ? "100%" : "auto" }}>

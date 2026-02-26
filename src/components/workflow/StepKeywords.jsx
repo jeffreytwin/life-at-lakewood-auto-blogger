@@ -253,7 +253,7 @@ export default function StepKeywords({ prop, onNext }) {
             right: mob ? 0 : "auto",
             background:"#fff",
             borderTop:"1px solid #E5E7EB",
-            padding: mob ? "12px 16px" : "12px 0",
+            padding: mob ? "12px 16px" : "12px 20px",
             display:"flex",
             justifyContent:"space-between",
             alignItems:"center",

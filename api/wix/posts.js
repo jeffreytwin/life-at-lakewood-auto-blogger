@@ -93,7 +93,11 @@ function mapPublishedPost(wixPost, propertyId) {
 
 // Map a Wix draft post to our article format
 function mapDraftPost(wixDraft, propertyId) {
-  const date = wixDraft.editedDate ? new Date(wixDraft.editedDate) : new Date();
+  // Detect Wix scheduled posts (drafts with a future publish date)
+  const scheduled = wixDraft.scheduledPublishDate;
+  const date = scheduled
+    ? new Date(scheduled)
+    : wixDraft.editedDate ? new Date(wixDraft.editedDate) : new Date();
 
   return {
     id: `draft_${wixDraft.id}`,
@@ -103,7 +107,7 @@ function mapDraftPost(wixDraft, propertyId) {
     day: date.getDate(),
     month: date.getMonth(),
     year: date.getFullYear(),
-    status: "in_wix",
+    status: scheduled ? "scheduled" : "in_wix",
     slug: wixDraft.slug || "",
     wixPostId: wixDraft.id,
     excerpt: wixDraft.excerpt || "",
@@ -242,12 +246,30 @@ export default async function handler(req, res) {
     const siteId = SITES[propertyId];
 
     try {
+      // Wix requires memberId (post owner) when creating drafts via API key auth.
+      // Fetch it from an existing post on this site.
+      let memberId = null;
+      try {
+        const existingPosts = await fetchPublishedPosts(siteId, apiKey);
+        if (existingPosts.length > 0 && existingPosts[0].memberId) {
+          memberId = existingPosts[0].memberId;
+        } else {
+          const existingDrafts = await fetchDraftPosts(siteId, apiKey);
+          if (existingDrafts.length > 0 && existingDrafts[0].memberId) {
+            memberId = existingDrafts[0].memberId;
+          }
+        }
+      } catch (e) {
+        console.warn("Could not fetch memberId for draft creation:", e.message);
+      }
+
       const richContent = sectionsToRichContent(sections || []);
 
       const draftPost = {
         title,
         richContent,
         excerpt: metaDescription || "",
+        ...(memberId ? { memberId } : {}),
       };
 
       // Add slug if provided
