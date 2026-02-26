@@ -9,7 +9,8 @@ const now = new Date();
 export const TODAY = now.getDate();
 
 // Generate MONTH_DATA dynamically: 6 months back + current + 6 months ahead
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+export const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+export const SHORT_MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
@@ -26,7 +27,7 @@ for (let offset = -3; offset <= 6; offset++) {
   const m = d.getMonth();
   const y = d.getFullYear();
   if (offset === 0) currentIdx = monthRange.length;
-  monthRange.push([MONTH_NAMES[m], y, getDaysInMonth(y, m), getStartDow(y, m)]);
+  monthRange.push([MONTH_NAMES[m], y, getDaysInMonth(y, m), getStartDow(y, m), m]);
 }
 
 export const MONTH_DATA = monthRange;

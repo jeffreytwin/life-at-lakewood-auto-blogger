@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { LOGOS } from "../data/logos";
-import { SM } from "../data/constants";
+import { SM, SHORT_MONTH_NAMES } from "../data/constants";
 import Pill from "./ui/Pill";
 import Kpi from "./ui/Kpi";
 
@@ -24,7 +24,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
   const recentActivity = arts.slice().sort((a, b) => (b.day || 0) - (a.day || 0)).slice(0, 3).map(a => ({
     l: a.status === "published" ? "Published" : a.status === "scheduled" ? "Scheduled" : "In Wix",
     v: a.title.length > 40 ? a.title.slice(0, 37) + "…" : a.title,
-    t: a.status === "published" ? `Feb ${a.day}` : a.status === "scheduled" ? `Feb ${a.day}` : "Draft",
+    t: a.status === "published" || a.status === "scheduled" ? `${SHORT_MONTH_NAMES[a.month] || "—"} ${a.day}` : "Draft",
   }));
 
   return (
@@ -85,7 +85,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
             ) : filteredArts.filter(a=>a.status==="published"||a.status==="scheduled").map(a=>(
               <div key={a.id} style={{ border:`1px solid ${border}`, borderRadius:10, padding:"12px 14px", background:a.status==="published"?(dm?"#1a2535":"#FAFAFA"):card }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:muted }}>Feb {a.day}</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:muted }}>{SHORT_MONTH_NAMES[a.month] || "—"} {a.day}</div>
                   <Pill status={a.status} />
                 </div>
                 <div style={{ fontSize:13, fontWeight:700, color:text, lineHeight:1.4, marginBottom:4 }}>{a.title}</div>
@@ -133,7 +133,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
                 {draftArts.map(a => (
                   <div key={a.id} style={{ border:"1px solid #FDE68A", borderRadius:10, padding:"12px 14px", background:dm?"#1c1a0a":"#FFFBEB" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:5 }}>
-                      <div style={{ fontSize:11, fontWeight:700, color:muted }}>Feb {a.day}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:muted }}>{SHORT_MONTH_NAMES[a.month] || "—"} {a.day}</div>
                       <Pill status={a.status} />
                     </div>
                     <div style={{ fontSize:13, fontWeight:700, color:text, lineHeight:1.4, marginBottom:6 }}>{a.title}</div>

@@ -9,12 +9,13 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
   const [filter, setFilter]     = useState("all");
   const [monthIdx, setMonthIdx] = useState(CURRENT_MONTH_IDX);
 
-  const [mName, mYear, mDays, mStartDow] = MONTH_DATA[monthIdx];
+  const [mName, mYear, mDays, mStartDow, mMonth] = MONTH_DATA[monthIdx];
   const isCurrentMonth = monthIdx === CURRENT_MONTH_IDX;
   const todayNum = isCurrentMonth ? TODAY : -1;
 
   const filtered = filter === "all" ? ARTICLES : ARTICLES.filter(a => a.p === filter);
-  const monthArts = isCurrentMonth ? filtered : [];
+  // Filter to articles matching the displayed month/year, excluding drafts from the calendar
+  const monthArts = filtered.filter(a => a.status !== "in_wix" && a.month === mMonth && a.year === mYear);
   const dayMap = {};
   monthArts.forEach(a => { if(!dayMap[a.day]) dayMap[a.day]=[]; dayMap[a.day].push(a); });
 
@@ -28,15 +29,13 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
   const DOW_SHORT = ["S","M","T","W","T","F","S"];
   const selArts = selDay ? (dayMap[selDay]||[]) : [];
 
-  const base = isCurrentMonth ? (filter === "all" ? ARTICLES.filter(a => a.status !== "in_wix") : ARTICLES.filter(a => a.p === filter && a.status !== "in_wix")) : [];
+  const base = filtered.filter(a => a.status !== "in_wix" && a.month === mMonth && a.year === mYear);
   const pub   = base.filter(a=>a.status==="published").length;
   const sched = base.filter(a=>a.status==="scheduled").length;
   const total = base.length;
 
-  // --- Mobile agenda: all articles sorted by day ---
-  const agendaArts = isCurrentMonth
-    ? (filter === "all" ? ARTICLES : ARTICLES.filter(a => a.p === filter)).slice().sort((a,b)=>a.day-b.day)
-    : [];
+  // --- Mobile agenda: articles for displayed month sorted by day (excluding drafts) ---
+  const agendaArts = filtered.filter(a => a.status !== "in_wix" && a.month === mMonth && a.year === mYear).sort((a,b)=>a.day-b.day);
 
   return (
     <div style={{ padding: mob ? "16px 12px" : "36px 44px", maxWidth:1400 }}>
@@ -81,9 +80,9 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
             {item.label}
           </div>
         ))}
-        {!isCurrentMonth && (
+        {total === 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:6, padding: mob ? "4px 10px" : "5px 12px", background:"#F3F4F6", borderRadius:20, fontSize: mob ? 11 : 12, color:"#9CA3AF" }}>
-            No article data for this month yet
+            No article data for {mName} {mYear}
           </div>
         )}
       </div>
@@ -190,7 +189,7 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
             /* Agenda list - all articles this month */
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:12, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:10, paddingLeft:4 }}>
-                {isCurrentMonth ? "This Month's Articles" : "No data for this month"}
+                {agendaArts.length > 0 ? `${mName} Articles` : `No articles in ${mName} ${mYear}`}
               </div>
               {agendaArts.length > 0 ? agendaArts.map(a => {
                 const pr = PROPS[a.p];
@@ -222,7 +221,7 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
               Monthly Goals
             </div>
             {Object.values(PROPS).map(pr=>{
-              const done = ARTICLES.filter(a=>a.p===pr.id && (a.status==="published"||a.status==="scheduled")).length;
+              const done = ARTICLES.filter(a=>a.p===pr.id && (a.status==="published"||a.status==="scheduled") && a.month === mMonth && a.year === mYear).length;
               const goal = goals[pr.id] || 4;
               const pct  = Math.min(100, Math.round((done/goal)*100));
               const over = done >= goal;
@@ -344,7 +343,7 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
                     {selDay ? "No articles this day" : "Click any day to see details"}
                   </div>
                   <div style={{ fontSize:12, color:"#9CA3AF", lineHeight:1.5 }}>
-                    {isCurrentMonth ? "Select a highlighted day to view scheduled content" : "Navigate to a future month to plan ahead."}
+                    {total > 0 ? "Select a highlighted day to view scheduled content" : `No published or scheduled articles in ${mName} ${mYear}.`}
                   </div>
                 </div>
               )}
@@ -367,7 +366,7 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
                 Monthly Goals
               </div>
               {Object.values(PROPS).map(pr=>{
-                const done = ARTICLES.filter(a=>a.p===pr.id && (a.status==="published"||a.status==="scheduled")).length;
+                const done = ARTICLES.filter(a=>a.p===pr.id && (a.status==="published"||a.status==="scheduled") && a.month === mMonth && a.year === mYear).length;
                 const goal = goals[pr.id] || 4;
                 const pct  = Math.min(100, Math.round((done/goal)*100));
                 const over = done >= goal;

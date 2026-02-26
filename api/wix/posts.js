@@ -190,7 +190,16 @@ export default async function handler(req, res) {
             ]);
 
             published.forEach(p => allPosts.push(mapPublishedPost(p, propId)));
-            drafts.forEach(d => allPosts.push(mapDraftPost(d, propId)));
+
+            // Deduplicate: skip drafts that correspond to already-published posts.
+            // Wix keeps draft copies of published posts when they're edited,
+            // which causes every published post to also appear as "in_wix".
+            const publishedTitles = new Set(published.map(p => (p.title || "").toLowerCase().trim()));
+            drafts.forEach(d => {
+              const draftTitle = (d.title || "").toLowerCase().trim();
+              if (draftTitle && publishedTitles.has(draftTitle)) return;
+              allPosts.push(mapDraftPost(d, propId));
+            });
           } catch (siteErr) {
             console.error(`Error fetching posts for ${propId}:`, siteErr.message);
             // Continue with other sites
