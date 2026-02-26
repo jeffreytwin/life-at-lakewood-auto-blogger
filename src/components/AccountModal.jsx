@@ -55,8 +55,26 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const handleImage = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Compress and resize to small avatar (200x200, JPEG 0.7) to avoid localStorage quota issues
     const reader = new FileReader();
-    reader.onload = ev => setPreview(ev.target.result);
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const size = 200;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        // Center-crop to square
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        const compressed = canvas.toDataURL("image/jpeg", 0.7);
+        setPreview(compressed);
+      };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
   };
 
@@ -137,7 +155,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                     style={inp} onFocus={e=>e.target.style.borderColor="#A855F7"} onBlur={e=>e.target.style.borderColor="#E5E7EB"}
                     onKeyDown={e=>{ if(e.key==="Enter") handlePasswordChange(); }} />
                 </div>
-                {pwMsg && <div style={{ fontSize:11, color:pwMsg==="Password updated!"?"#22C55E":"#EF4444", marginTop:6 }}>{pwMsg}</div>}
+                {pwMsg && <div style={{ fontSize:11, color:pwMsg.includes("updated successfully")?"#22C55E":"#EF4444", marginTop:6 }}>{pwMsg}</div>}
                 <button onClick={handlePasswordChange} disabled={pwLoading}
                   style={{ marginTop:8, padding:"7px 16px", background:"#3B0764", color:"#fff", border:"none", borderRadius:7, fontSize:11, fontWeight:700, cursor:pwLoading?"not-allowed":"pointer" }}>
                   {pwLoading ? "Updating…" : "Update Password"}
