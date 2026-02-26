@@ -107,3 +107,10 @@ export async function createWixDraft({ propertyId, title, sections, seoTitle, me
   }
   return res.json();
 }
+
+// --- Google Search Console API ---
+
+export async function fetchGSCKeywords(propertyId, days = 90) {
+  const res = await fetch(`${API_BASE}/api/google/keywords?property=${propertyId}&days=${days}`);
+  return res.json();
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useMobile from "../../hooks/useMobile";
 import { KEYWORD_SUGGESTIONS } from "../../data/mock-keywords";
 
@@ -34,6 +34,27 @@ export default function StepKeywords({ prop, onNext }) {
   const [seedInput, setSeedInput]   = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [seedFocused, setSeedFocused] = useState(false);
+  const [gscConnected, setGscConnected] = useState(false);
+  const gscFetchedRef = useRef(false);
+
+  // Try to fetch real GSC keywords during the scanning animation
+  useEffect(() => {
+    if (gscFetchedRef.current) return;
+    gscFetchedRef.current = true;
+
+    fetch(`/api/google/keywords?property=${prop.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.connected) setGscConnected(true);
+        if (data.keywords && data.keywords.length > 0) {
+          // Merge GSC keywords with mock data, GSC first
+          const gscKws = new Set(data.keywords.map(k => k.kw));
+          const mockOnly = KEYWORD_SUGGESTIONS[prop.id].filter(k => !gscKws.has(k.kw));
+          setKeywords([...data.keywords, ...mockOnly]);
+        }
+      })
+      .catch(() => { /* GSC unavailable, keep mock data */ });
+  }, [prop.id]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -74,9 +95,17 @@ export default function StepKeywords({ prop, onNext }) {
         <h2 style={{ fontFamily:"'Inter','DM Sans',system-ui,sans-serif", fontWeight:800, fontSize:16, color:prop.accent, margin:"0 0 6px" }}>
           Keyword Opportunities
         </h2>
-        <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#6B7280", margin:0 }}>
+        <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#6B7280", margin:"0 0 8px" }}>
           Scanning Google Search Console + competitor rankings for <strong>{prop.short}</strong> buyer queries. Select the keywords you want to target.
         </p>
+        {!scanning && (
+          <div style={{ display:"flex", gap:6 }}>
+            <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:6, background:gscConnected?"#DCFCE7":"#FEF3C7", color:gscConnected?"#16A34A":"#92400E" }}>
+              {gscConnected ? "GSC Connected" : "GSC: Not connected"}
+            </span>
+            <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Claude AI</span>
+          </div>
+        )}
       </div>
 
       {scanning ? (

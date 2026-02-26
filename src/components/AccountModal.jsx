@@ -3,7 +3,7 @@ import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
 
 export default function AccountModal({ user, onUpdate, goals, setGoals, writingStyle, setWritingStyle, darkMode, setDarkMode, onClose, onSignOut }) {
-  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display"
+  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display" | "connections"
   const [name, setName]         = useState(user.name);
   const [email, setEmail]       = useState(user.email);
   const [preview, setPreview]   = useState(user.avatar);
@@ -43,7 +43,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
           </div>
           {/* Tabs */}
           <div style={{ display:"flex", gap:0 }}>
-            {[["profile","Profile"],["goals","Monthly Goals"],["writing","Writing Style"],["display","Display"]].map(([t,label]) => (
+            {[["profile","Profile"],["goals","Monthly Goals"],["writing","Writing Style"],["connections","Connections"],["display","Display"]].map(([t,label]) => (
               <button key={t} onClick={()=>setTab(t)} style={{ padding:"8px 16px", border:"none", borderBottom:`2px solid ${tab===t?"#3B0764":"transparent"}`, background:"none", fontSize:13, fontWeight:tab===t?700:500, color:tab===t?"#3B0764":"#6B7280", cursor:"pointer", transition:"all 0.15s" }}>
                 {label}
               </button>
@@ -131,6 +131,70 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
               />
               <div style={{ fontSize:11, color:"#9CA3AF", marginTop:8 }}>
                 These preferences will be included in every article generation prompt sent to Claude.
+              </div>
+            </div>
+          )}
+
+          {tab === "connections" && (
+            <div>
+              <p style={{ fontSize:13, color:"#6B7280", margin:"0 0 20px" }}>
+                Connect external services to unlock real data for keyword research and blog management.
+              </p>
+
+              {/* Google Search Console */}
+              <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" fill="#4285F4"/></svg>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Google Search Console</div>
+                    <div style={{ fontSize:11, color:"#9CA3AF" }}>Real keyword data, clicks, impressions, and rankings</div>
+                  </div>
+                </div>
+                <a
+                  href="/api/google/auth"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  Connect Google Account
+                </a>
+                <div style={{ fontSize:10, color:"#9CA3AF", marginTop:8 }}>
+                  Grants read-only access to Search Console data for your blog properties.
+                </div>
+              </div>
+
+              {/* Wix */}
+              <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22.5 4.5l-3 15-4.5-9-4.5 9-3-15-4.5 15h-3L6 1.5l4.5 9L15 1.5l4.5 9L22.5 4.5z" fill="#0C6EFC"/></svg>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Wix Blog</div>
+                    <div style={{ fontSize:11, color:"#9CA3AF" }}>Push articles to your Wix blog drafts</div>
+                  </div>
+                  <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>API Key</span>
+                </div>
+                <div style={{ fontSize:11, color:"#6B7280" }}>
+                  Set <code style={{ background:"#F3F4F6", padding:"1px 4px", borderRadius:3 }}>WIX_API_KEY</code> in your Vercel environment variables to enable.
+                </div>
+              </div>
+
+              {/* Claude AI */}
+              <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Claude AI</div>
+                    <div style={{ fontSize:11, color:"#9CA3AF" }}>Article generation, keyword ideas, and revisions</div>
+                  </div>
+                  <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
+                </div>
               </div>
             </div>
           )}
