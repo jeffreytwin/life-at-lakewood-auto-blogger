@@ -16,8 +16,7 @@ Respond ONLY with a JSON array (no markdown, no backticks, no explanation):
   {
     "title": "compelling SEO article title",
     "angle": "one sentence — the specific hook or format that makes this distinct",
-    "why": "2 sentences — why this will rank and convert for ${location} real estate buyers",
-    "words": 1200
+    "why": "2 sentences — why this will rank and convert for ${location} real estate buyers"
   }
 ]`;
 

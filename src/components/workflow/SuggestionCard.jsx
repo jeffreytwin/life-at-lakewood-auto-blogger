@@ -33,7 +33,6 @@ export default function SuggestionCard({ s, isSelected, onSelect, prop }) {
           <span style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", background: "#F3F4F6", padding: "2px 10px", borderRadius: 20 }}>
             {s.angle}
           </span>
-          <span style={{ fontSize: 11, color: "#9CA3AF" }}>✍️ ~{(s.words || 1200).toLocaleString()} words</span>
         </div>
         <p style={{ fontSize: 12, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>{s.why}</p>
       </div>

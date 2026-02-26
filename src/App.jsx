@@ -133,6 +133,7 @@ export default function App() {
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#2D3748; border-radius:4px; }
         ::-webkit-scrollbar-track { background:transparent; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         @media(max-width:767px){
           .mob-hide { display:none!important; }
         }
@@ -215,7 +216,7 @@ export default function App() {
         <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
         {view === "calendar" && <CalendarView articles={articles} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onRefresh={refreshArticles} refreshing={articlesLoading} onReviewChecklist={(articleId) => { const a = articles.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
-        {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} articles={articles} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} />}
+        {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} articles={articles} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} onRefresh={refreshArticles} refreshing={articlesLoading} />}
         {activeProp && isWorkflow  && <WorkflowView prop={activeProp} articles={articles} onBack={() => { refreshArticles(); goBack(); }} dm={dm} bg={bg} viewStr={view} mob={mob} writingStyle={writingStyle} onRefreshArticles={refreshArticles} />}
         </div>
       </div>

@@ -30,12 +30,26 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
     if (newPassword !== confirmPassword) { setPwMsg("Passwords don't match"); return; }
     setPwLoading(true);
     setPwMsg("");
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setPwLoading(false);
-    if (error) { setPwMsg(error.message); return; }
-    setPwMsg("Password updated!");
-    setNewPassword("");
-    setConfirmPassword("");
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) { setPwLoading(false); setPwMsg(error.message); return; }
+      // Verify the password was actually changed by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: newPassword,
+      });
+      setPwLoading(false);
+      if (signInError) {
+        setPwMsg("Password change may require email confirmation. Check your inbox.");
+        return;
+      }
+      setPwMsg("Password updated successfully!");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e) {
+      setPwLoading(false);
+      setPwMsg(e.message || "Failed to update password");
+    }
   };
 
   const handleImage = (e) => {
@@ -197,37 +211,26 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                   </div>
                 </div>
                 {gscConnected ? (
-                  <div>
-                    <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#DCFCE7", borderRadius:8, fontSize:12, fontWeight:700, color:"#16A34A" }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      Connected
-                    </div>
-                    <div style={{ fontSize:10, color:"#9CA3AF", marginTop:8 }}>
-                      Read-only access to Search Console data is active.
-                      <a href="/api/google/auth" target="_blank" rel="noreferrer" style={{ marginLeft:6, color:"#4285F4", textDecoration:"none", fontWeight:700 }}>Reconnect</a>
-                    </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
+                    <a href="/api/google/auth" target="_blank" rel="noreferrer" style={{ fontSize:10, color:"#4285F4", textDecoration:"none", fontWeight:700 }}>Reconnect</a>
                   </div>
                 ) : (
-                  <div>
-                    <a
-                      href="/api/google/auth"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, cursor:"pointer" }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                      Connect Google Account
-                    </a>
-                    <div style={{ fontSize:10, color:"#9CA3AF", marginTop:8 }}>
-                      Grants read-only access to Search Console data for your blog properties.
-                    </div>
-                  </div>
+                  <a
+                    href="/api/google/auth"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    Connect Google Account
+                  </a>
                 )}
               </div>
 
               {/* Wix */}
               <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                   <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22.5 4.5l-3 15-4.5-9-4.5 9-3-15-4.5 15h-3L6 1.5l4.5 9L15 1.5l4.5 9L22.5 4.5z" fill="#0C6EFC"/></svg>
                   </div>
@@ -235,10 +238,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                     <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Wix Blog</div>
                     <div style={{ fontSize:11, color:"#9CA3AF" }}>Push articles to your Wix blog drafts</div>
                   </div>
-                  <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>API Key</span>
-                </div>
-                <div style={{ fontSize:11, color:"#6B7280" }}>
-                  Set <code style={{ background:"#F3F4F6", padding:"1px 4px", borderRadius:3 }}>WIX_API_KEY</code> in your Vercel environment variables to enable.
+                  <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
                 </div>
               </div>
 

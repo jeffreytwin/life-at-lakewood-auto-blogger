@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LOGOS } from "../../data/logos";
 import StepBar from "./StepBar";
 import StepKeywords from "./StepKeywords";
@@ -6,6 +6,34 @@ import KeywordArticlePage from "./KeywordArticlePage";
 import StepGenerating from "./StepGenerating";
 import StepPreviewEdit from "./StepPreviewEdit";
 import StepReview from "./StepReview";
+
+// Persist workflow state to localStorage so users can resume after refresh
+const STORAGE_KEY_PREFIX = "lal_workflow_";
+
+function loadWorkflowState(propId) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + propId);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    // Only restore if the saved state has meaningful progress (step >= 3 with generated content)
+    if (saved && saved.step >= 3 && saved.generatedContents && saved.chosenArticles?.length > 0) {
+      return saved;
+    }
+  } catch {}
+  return null;
+}
+
+function saveWorkflowState(propId, state) {
+  try {
+    localStorage.setItem(STORAGE_KEY_PREFIX + propId, JSON.stringify(state));
+  } catch {}
+}
+
+function clearWorkflowState(propId) {
+  try {
+    localStorage.removeItem(STORAGE_KEY_PREFIX + propId);
+  } catch {}
+}
 
 export default function WorkflowView({ prop, articles: allArticles = [], onBack, dm=false, bg="#F2F1ED", viewStr="", mob=false, writingStyle="", onRefreshArticles }) {
   // Detect direct-review entry (from "Needs Attention" button)
@@ -15,17 +43,34 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
     ? allArticles.find(a => a.id === directReviewArticleId)
     : null;
 
-  const [step, setStep]                 = useState(directReviewArticle ? 4 : 0);
-  const [selectedKeywords, setSelectedKeywords] = useState([]);
+  // Try to restore saved workflow state (only for steps 3+ with generated content)
+  const saved = !directReviewArticle ? loadWorkflowState(prop.id) : null;
+
+  const [step, setStep]                 = useState(directReviewArticle ? 4 : (saved ? saved.step : 0));
+  const [selectedKeywords, setSelectedKeywords] = useState(saved ? saved.selectedKeywords : []);
   const [kwPageIndex, setKwPageIndex]   = useState(0);
-  const [chosenArticles, setChosenArticles] = useState(directReviewArticle ? [directReviewArticle] : []);
-  const [generatedContents, setGeneratedContents] = useState(null);
+  const [chosenArticles, setChosenArticles] = useState(directReviewArticle ? [directReviewArticle] : (saved ? saved.chosenArticles : []));
+  const [generatedContents, setGeneratedContents] = useState(saved ? saved.generatedContents : null);
+  const [showResumeBar, setShowResumeBar] = useState(!!saved);
+
+  // Persist workflow state when it changes (only at step 3+ with content)
+  const persistState = useCallback((s, kws, arts, contents) => {
+    if (s >= 3 && contents && arts.length > 0) {
+      saveWorkflowState(prop.id, { step: s, selectedKeywords: kws, chosenArticles: arts, generatedContents: contents });
+    }
+  }, [prop.id]);
+
+  // Save on step/content changes
+  useEffect(() => {
+    persistState(step, selectedKeywords, chosenArticles, generatedContents);
+  }, [step, selectedKeywords, chosenArticles, generatedContents, persistState]);
 
   const handleKeywordsNext = (kws) => {
     setSelectedKeywords(kws);
     setKwPageIndex(0);
     setChosenArticles([]);
     setStep(1);
+    setShowResumeBar(false);
   };
 
   // Called when user confirms their pick for keyword at kwPageIndex
@@ -52,14 +97,51 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
     }
   };
 
+  const handleBackToDashboard = () => {
+    clearWorkflowState(prop.id);
+    onBack();
+  };
+
+  const handleGenerateMore = () => {
+    clearWorkflowState(prop.id);
+    setStep(0);
+    setSelectedKeywords([]);
+    setKwPageIndex(0);
+    setChosenArticles([]);
+    setGeneratedContents(null);
+    setShowResumeBar(false);
+  };
+
+  const handleStartFresh = () => {
+    clearWorkflowState(prop.id);
+    setStep(0);
+    setSelectedKeywords([]);
+    setKwPageIndex(0);
+    setChosenArticles([]);
+    setGeneratedContents(null);
+    setShowResumeBar(false);
+  };
+
   // StepBar: during step 1 we show "Select Articles (2/N)" sub-label
   const stepBarStep = step === 1 ? 1 : step;
 
   return (
     <div style={{ padding: mob ? "20px 16px" : "36px 44px", maxWidth:900 }}>
+      {/* Resume bar — shown when workflow was restored from localStorage */}
+      {showResumeBar && step >= 3 && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px", background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:"#92400E" }}>
+            Resumed your previous session ({chosenArticles.length} article{chosenArticles.length>1?"s":""})
+          </div>
+          <button onClick={handleStartFresh} style={{ fontSize:11, fontWeight:700, color:"#92400E", background:"none", border:"1px solid #FDE68A", borderRadius:6, padding:"4px 10px", cursor:"pointer" }}>
+            Start Fresh
+          </button>
+        </div>
+      )}
+
       {/* Back button + property label */}
       <div style={{ display:"flex", alignItems:"center", gap: mob ? 8 : 12, marginBottom: mob ? 20 : 28, flexWrap:"wrap" }}>
-        <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, fontSize:12, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
+        <button onClick={handleBackToDashboard} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 14px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, fontSize:12, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Back to {prop.short}
         </button>
@@ -100,7 +182,7 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
 
       {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} articles={chosenArticles} writingStyle={writingStyle} onDone={(contents) => { setGeneratedContents(contents); setStep(3); }} />}
       {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} initialContents={generatedContents} onApprove={(contents) => { setGeneratedContents(contents); setStep(4); if (onRefreshArticles) onRefreshArticles(); }} onBack={() => { setGeneratedContents(null); setStep(2); }} />}
-      {step === 4 && <StepReview prop={prop} articles={chosenArticles} allArticles={allArticles} onDone={onBack} onGenerateMore={() => { setStep(0); setSelectedKeywords([]); setKwPageIndex(0); }} />}
+      {step === 4 && <StepReview prop={prop} articles={chosenArticles} generatedContents={generatedContents} allArticles={allArticles} onDone={handleBackToDashboard} onGenerateMore={handleGenerateMore} />}
     </div>
   );
 }

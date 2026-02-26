@@ -3,7 +3,15 @@ import useMobile from "../../hooks/useMobile";
 import Pill from "../ui/Pill";
 import { PROPS } from "../../data/properties";
 
-export default function StepReview({ prop, articles, allArticles = [], onDone, onGenerateMore }) {
+function countWords(content) {
+  if (!content || !content.sections) return null;
+  return content.sections.reduce((sum, sec) => {
+    return sum + (sec.heading ? sec.heading.split(/\s+/).filter(Boolean).length : 0)
+         + (sec.body ? sec.body.split(/\s+/).filter(Boolean).length : 0);
+  }, 0);
+}
+
+export default function StepReview({ prop, articles, generatedContents, allArticles = [], onDone, onGenerateMore }) {
   const mob = useMobile();
   const [checked, setChecked] = useState({});
 
@@ -11,7 +19,7 @@ export default function StepReview({ prop, articles, allArticles = [], onDone, o
   const draftArts = allArticles.filter(a => a.p === prop.id && a.status === "in_wix");
   const workflowIds = new Set(articles.map(a => a.id));
   const extraDrafts = draftArts.filter(a => !workflowIds.has(a.id));
-  const allReviewArticles = [...articles, ...extraDrafts.map(a => ({ ...a, words: 1200 }))];
+  const allReviewArticles = [...articles, ...extraDrafts];
 
   const toggle = (id, item) => {
     setChecked(c => ({ ...c, [`${id}_${item}`]: !c[`${id}_${item}`] }));
@@ -40,7 +48,7 @@ export default function StepReview({ prop, articles, allArticles = [], onDone, o
                   <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"#111827", marginBottom:6, lineHeight:1.3 }}>{a.title}</div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                     <span style={{ fontSize:11, fontWeight:700, color:prop.color, background:prop.light, padding:"2px 10px", borderRadius:20 }}>🎯 {a.kw}</span>
-                    <span style={{ fontSize:11, color:"#6B7280" }}>✍️ ~{(a.words||1200).toLocaleString()} words</span>
+                    {(() => { const gc = generatedContents && generatedContents[idx]; const wc = countWords(gc); return wc ? <span style={{ fontSize:11, color:"#6B7280" }}>✍️ {wc.toLocaleString()} words</span> : null; })()}
                   </div>
                 </div>
                 <Pill status={allDone ? "scheduled" : "in_wix"} />

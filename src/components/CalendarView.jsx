@@ -57,16 +57,6 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
             </button>
           </div>
         </div>
-        {/* Refresh + Site filter */}
-        <div style={{ display:"flex", gap: mob ? 4 : 6, flexWrap:"wrap", alignItems:"center" }}>
-          {onRefresh && (
-            <button onClick={onRefresh} disabled={refreshing}
-              style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:8, fontSize:11, fontWeight:700, color:refreshing?"#9CA3AF":"#374151", cursor:refreshing?"not-allowed":"pointer" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation:refreshing?"spin 0.7s linear infinite":"none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-              {refreshing ? "Syncing…" : "Sync Wix"}
-            </button>
-          )}
-        </div>
         <div style={{ display:"flex", gap: mob ? 4 : 6, flexWrap:"wrap" }}>
           {[{id:"all",label:"All Sites",color:"#374151"}, ...Object.values(PROPS).map(p=>({id:p.id,label: mob ? p.short.split(" ")[0] : p.short,color:p.accent}))].map(f=>(
             <button key={f.id} onClick={()=>{ setFilter(f.id); setSelDay(null); }}
@@ -249,6 +239,14 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
               );
             })}
           </div>
+          {/* Sync Wix - mobile */}
+          {onRefresh && (
+            <button onClick={onRefresh} disabled={refreshing}
+              style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, width:"100%", padding:"10px", marginTop:12, background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, fontSize:12, fontWeight:700, color:refreshing?"#9CA3AF":"#374151", cursor:refreshing?"not-allowed":"pointer" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation:refreshing?"spin 0.7s linear infinite":"none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              {refreshing ? "Syncing…" : "Sync Wix Data"}
+            </button>
+          )}
         </div>
       ) : (
         /* ====== DESKTOP: Full calendar grid + right panel ====== */
@@ -395,6 +393,15 @@ export default function CalendarView({ articles: ARTICLES = [], dm, bg, card, bo
               })}
               <div style={{ fontSize:10, color:"#D1D5DB", marginTop:4 }}>Goals set in Account → Monthly Goals</div>
             </div>
+
+            {/* Sync Wix - desktop */}
+            {onRefresh && (
+              <button onClick={onRefresh} disabled={refreshing}
+                style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, width:"100%", padding:"10px 16px", background:"#fff", border:"1px solid #E5E7EB", borderRadius:10, fontSize:12, fontWeight:700, color:refreshing?"#9CA3AF":"#374151", cursor:refreshing?"not-allowed":"pointer" }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation:refreshing?"spin 0.7s linear infinite":"none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                {refreshing ? "Syncing…" : "Sync Wix Data"}
+              </button>
+            )}
           </div>
         </div>
       )}

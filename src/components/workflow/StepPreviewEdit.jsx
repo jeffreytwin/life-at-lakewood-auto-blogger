@@ -192,7 +192,7 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
             <div style={{ fontSize:15, fontWeight:800, color:"#111827", marginBottom:6, lineHeight:1.3 }}>{article.title}</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <span style={{ fontSize:11, fontWeight:700, color:prop.color, background:prop.light, padding:"2px 10px", borderRadius:20 }}>🎯 {article.kw}</span>
-              <span style={{ fontSize:11, color:"#6B7280" }}>✍️ ~{(article.words||1200).toLocaleString()} words</span>
+              <span style={{ fontSize:11, color:"#6B7280" }}>✍️ {content && content.sections ? content.sections.reduce((sum, sec) => sum + (sec.heading ? sec.heading.split(/\s+/).filter(Boolean).length : 0) + (sec.body ? sec.body.split(/\s+/).filter(Boolean).length : 0), 0).toLocaleString() : "—"} words</span>
             </div>
           </div>
           {approvedSet.has(activeIndex)
