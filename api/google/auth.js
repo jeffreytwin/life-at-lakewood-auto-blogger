@@ -10,6 +10,15 @@ const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const SCOPES = "https://www.googleapis.com/auth/webmasters.readonly";
 
 function getRedirectUri(req) {
+  // 1. Explicit env var — most reliable, set it once and it never changes
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    return process.env.GOOGLE_REDIRECT_URI;
+  }
+  // 2. Vercel's stable production URL (doesn't change between deployments)
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/api/google/auth`;
+  }
+  // 3. Fallback: derive from request headers (changes per deployment — avoid)
   const protocol = req.headers["x-forwarded-proto"] || "https";
   const host = req.headers["x-forwarded-host"] || req.headers.host;
   return `${protocol}://${host}/api/google/auth`;
@@ -104,6 +113,32 @@ export default async function handler(req, res) {
 
   const redirectUri = getRedirectUri(req);
   const { code, error: authError } = req.query;
+
+  // --- Debug: show the redirect URI being used (visit /api/google/auth?debug) ---
+  if (req.query.debug !== undefined) {
+    return res.status(200).json({
+      redirectUri,
+      source: process.env.GOOGLE_REDIRECT_URI ? "GOOGLE_REDIRECT_URI env var"
+        : process.env.VERCEL_PROJECT_PRODUCTION_URL ? "VERCEL_PROJECT_PRODUCTION_URL"
+        : "request headers (unstable!)",
+      tip: "Add this exact redirect URI to Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client → Authorized redirect URIs",
+    });
+  }
+
+  // --- Check: validate whether GSC is actually connected (visit /api/google/auth?check) ---
+  if (req.query.check !== undefined) {
+    try {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) {
+        return res.status(200).json({ connected: false, reason: "no_token" });
+      }
+      // Try to get an access token — this will fail if the refresh token is revoked
+      const accessToken = await getAccessToken(refreshToken);
+      return res.status(200).json({ connected: true });
+    } catch (err) {
+      return res.status(200).json({ connected: false, reason: "token_invalid", error: err.message });
+    }
+  }
 
   // --- Error from Google ---
   if (authError) {
