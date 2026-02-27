@@ -146,7 +146,7 @@ export default async function handler(req, res) {
     console.error("GSC fetch error:", err);
     return res.status(500).json({
       keywords: [],
-      connected: true,
+      connected: false,
       error: err.message,
     });
   }
