@@ -109,7 +109,7 @@ export default async function handler(req, res) {
       if (gscRes.status === 403) {
         return res.status(200).json({
           keywords: [],
-          connected: true,
+          connected: false,
           message: "No access to this property in Google Search Console. Make sure the account has access.",
         });
       }

@@ -17,21 +17,12 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const [pwLoading, setPwLoading] = useState(false);
   const [gscConnected, setGscConnected] = useState(false);
 
-  // Check GSC connection status — only mark connected if the API returns keywords
+  // Check GSC connection status — validate the token actually works
   useEffect(() => {
-    fetch("/api/google/keywords?property=lakewood")
-      .then(r => {
-        if (!r.ok) { setGscConnected(false); return null; }
-        return r.json();
-      })
-      .then(data => {
-        if (data && data.connected && data.keywords && data.keywords.length > 0) {
-          setGscConnected(true);
-        } else {
-          setGscConnected(false);
-        }
-      })
-      .catch(() => { setGscConnected(false); });
+    fetch("/api/google/auth?check")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setGscConnected(!!data?.connected))
+      .catch(() => setGscConnected(false));
   }, []);
 
   const handlePasswordChange = async () => {
