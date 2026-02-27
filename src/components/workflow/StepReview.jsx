@@ -16,9 +16,10 @@ export default function StepReview({ prop, articles, generatedContents, allArtic
   const [checked, setChecked] = useState({});
 
   // Merge workflow articles with existing drafts for this property
+  // Deduplicate by title (case-insensitive) since workflow IDs differ from Wix draft IDs
   const draftArts = allArticles.filter(a => a.p === prop.id && a.status === "in_wix");
-  const workflowIds = new Set(articles.map(a => a.id));
-  const extraDrafts = draftArts.filter(a => !workflowIds.has(a.id));
+  const workflowTitles = new Set(articles.map(a => (a.title || "").toLowerCase().trim()));
+  const extraDrafts = draftArts.filter(a => !workflowTitles.has((a.title || "").toLowerCase().trim()));
   const allReviewArticles = [...articles, ...extraDrafts];
 
   const toggle = (id, item) => {

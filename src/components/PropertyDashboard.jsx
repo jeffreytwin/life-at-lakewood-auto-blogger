@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LOGOS } from "../data/logos";
 import { SM, SHORT_MONTH_NAMES } from "../data/constants";
 import Pill from "./ui/Pill";
@@ -20,14 +20,37 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
   const curMonth = now.getMonth();
   const curYear = now.getFullYear();
 
-  // Build top articles and activity from real data
+  // Fetch real GSC data for this property
+  const [gscData, setGscData] = useState(null);
+  useEffect(() => {
+    fetch(`/api/google/keywords?property=${prop.id}`)
+      .then(r => r.json())
+      .then(data => { if (data.connected && data.keywords?.length > 0) setGscData(data.keywords); })
+      .catch(() => {});
+  }, [prop.id]);
+
+  // Build top articles from real GSC data when available
   const publishedArts = arts.filter(a => a.status === "published");
   const publishedThisMonth = publishedArts.filter(a => a.month === curMonth && a.year === curYear);
-  const allTopArticles = publishedArts.map((a, i) => ({
-    t: a.title,
-    c: a.clicks || Math.max(10, 120 - i * 15),
-    p: a.position || (6 + i * 3.5),
-  })).sort((a, b) => b.c - a.c);
+
+  // Match GSC keyword data to published articles
+  const allTopArticles = (() => {
+    if (gscData) {
+      // Build a map of keyword -> GSC data (take best clicks per keyword)
+      const gscMap = {};
+      gscData.forEach(g => { const k = (g.kw || "").toLowerCase(); if (!gscMap[k] || g.clicks > gscMap[k].clicks) gscMap[k] = g; });
+      // Match articles to GSC data by keyword or title words
+      return publishedArts.map(a => {
+        const artKw = (a.kw || "").toLowerCase();
+        const match = gscMap[artKw] || gscData.find(g => {
+          const q = (g.kw || "").toLowerCase();
+          return a.title.toLowerCase().includes(q) || q.includes(artKw);
+        });
+        return match ? { t: a.title, c: match.clicks || 0, p: Math.round((match.position || 0) * 10) / 10 } : null;
+      }).filter(Boolean).sort((a, b) => b.c - a.c);
+    }
+    return [];
+  })();
 
   const recentActivity = arts.slice().sort((a, b) => {
     const dateA = a.year != null ? new Date(a.year, a.month || 0, a.day || 1) : new Date(0);
@@ -97,6 +120,49 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
         ].map(k=><Kpi key={k.label} {...k} accent={prop.accent} dm={dm} card={card} border={border} text={text} muted={muted} />)}
       </div>
 
+      {/* Top Articles + Recent Activity — ABOVE scheduled/published */}
+      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16 }}>
+        <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, letterSpacing:"0.04em" }}>🏆 Top Articles (All Time)</div>
+            {allTopArticles.length > 3 && !showAllArticles && <button onClick={()=>setShowAllArticles(true)} style={{ fontSize:11, fontWeight:700, color:prop.accent, background:"none", border:"none", cursor:"pointer", padding:0 }}>See More →</button>}
+            {showAllArticles && <button onClick={()=>setShowAllArticles(false)} style={{ fontSize:11, fontWeight:700, color:muted, background:"none", border:"none", cursor:"pointer", padding:0 }}>Show Less</button>}
+          </div>
+          {allTopArticles.length === 0 ? (
+            <div style={{ padding:"20px 0", textAlign:"center", color:muted, fontSize:12 }}>
+              {gscData === null ? "Connect Google Search Console in Settings to see real performance data." : "No matching GSC data found for published articles yet."}
+            </div>
+          ) : (showAllArticles ? allTopArticles : allTopArticles.slice(0, 3)).map((a,i)=>(
+            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:i<(showAllArticles?allTopArticles.length:3)-1?`1px solid ${border}`:"none" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2 }}>{a.t}</div>
+                <div style={{ fontSize:11, color:muted }}>Avg. Position: {a.p}</div>
+              </div>
+              <div style={{ textAlign:"right", marginLeft:14 }}>
+                <div style={{ fontSize:20, fontWeight:800, color:dm?prop.accent:prop.color }}>{a.c}</div>
+                <div style={{ fontSize:10, color:muted }}>clicks</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, marginBottom:14, letterSpacing:"0.04em" }}>🕐 Recent Activity</div>
+          {recentActivity.map((item,i)=>(
+            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 0", borderBottom:i<recentActivity.length-1?`1px solid ${border}`:"none" }}>
+              <div style={{ width:28, height:28, borderRadius:8, background:prop.light, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
+                {item.l==="Published"?"✓":item.l==="Scheduled"?"⏰":"📝"}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:11, color:prop.accent, fontWeight:700 }}>{item.l}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:text }}>{item.v}</div>
+              </div>
+              <div style={{ fontSize:11, color:muted, whiteSpace:"nowrap" }}>{item.t}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Scheduled & Published Articles + Needs Attention */}
       <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 340px", gap:16, marginBottom:16 }}>
 
@@ -132,7 +198,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
                   </a>
                 )}
                 {a.status === "scheduled" && (
-                  <a href={prop.wixDash} target="_blank" rel="noreferrer"
+                  <a href={prop.wixScheduled || prop.wixDash} target="_blank" rel="noreferrer"
                     style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:11, fontWeight:700, color:"#92400E", background:"#FFFBEB", padding:"5px 10px", borderRadius:6, textDecoration:"none", border:"1px solid #FDE68A" }}>
                     View Scheduled →
                   </a>
@@ -143,7 +209,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
           {schedPubArts.length > 4 && (
             <button onClick={() => setShowAllScheduled(s => !s)}
               style={{ display:"block", width:"100%", marginTop:12, padding:"8px", background:"none", border:`1px solid ${border}`, borderRadius:8, fontSize:12, fontWeight:700, color:prop.accent, cursor:"pointer" }}>
-              {showAllScheduled ? "Show Less" : `See All ${schedPubArts.length} Articles`}
+              {showAllScheduled ? "Show Less" : "See More →"}
             </button>
           )}
         </div>
@@ -195,7 +261,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
                 {draftArts.length > 4 && (
                   <button onClick={() => setShowAllDrafts(s => !s)}
                     style={{ padding:"8px", background:"none", border:`1px solid #FDE68A`, borderRadius:8, fontSize:12, fontWeight:700, color:"#92400E", cursor:"pointer" }}>
-                    {showAllDrafts ? "Show Less" : `See All ${draftArts.length} Drafts`}
+                    {showAllDrafts ? "Show Less" : "See More →"}
                   </button>
                 )}
               </div>
@@ -239,44 +305,6 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
         </div>
       </div>
 
-      {/* Top Articles + Recent Activity */}
-      <div style={{ display:"grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap:16, marginBottom:16 }}>
-        <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, letterSpacing:"0.04em" }}>🏆 Top Articles (All Time)</div>
-            {allTopArticles.length > 3 && !showAllArticles && <button onClick={()=>setShowAllArticles(true)} style={{ fontSize:11, fontWeight:700, color:prop.accent, background:"none", border:"none", cursor:"pointer", padding:0 }}>See More →</button>}
-            {showAllArticles && <button onClick={()=>setShowAllArticles(false)} style={{ fontSize:11, fontWeight:700, color:muted, background:"none", border:"none", cursor:"pointer", padding:0 }}>Show Less</button>}
-          </div>
-          {(showAllArticles ? allTopArticles : allTopArticles.slice(0, 3)).map((a,i)=>(
-            <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:i<(showAllArticles?allTopArticles.length:3)-1?`1px solid ${border}`:"none" }}>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2 }}>{a.t}</div>
-                <div style={{ fontSize:11, color:muted }}>Avg. Position: {a.p}</div>
-              </div>
-              <div style={{ textAlign:"right", marginLeft:14 }}>
-                <div style={{ fontSize:20, fontWeight:800, color:dm?prop.accent:prop.color }}>{a.c}</div>
-                <div style={{ fontSize:10, color:muted }}>clicks</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ background:card, border:`1px solid ${border}`, borderRadius:14, padding:"20px 22px" }}>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700, color:text, marginBottom:14, letterSpacing:"0.04em" }}>🕐 Recent Activity</div>
-          {recentActivity.map((item,i)=>(
-            <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"10px 0", borderBottom:i<recentActivity.length-1?`1px solid ${border}`:"none" }}>
-              <div style={{ width:28, height:28, borderRadius:8, background:prop.light, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
-                {item.l==="Published"?"✓":item.l==="Scheduled"?"⏰":"📝"}
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:11, color:prop.accent, fontWeight:700 }}>{item.l}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:text }}>{item.v}</div>
-              </div>
-              <div style={{ fontSize:11, color:muted, whiteSpace:"nowrap" }}>{item.t}</div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

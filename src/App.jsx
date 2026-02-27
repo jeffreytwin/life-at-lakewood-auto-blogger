@@ -47,14 +47,19 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const u = session.user;
-        // Check localStorage for saved profile overrides
-        let saved = {};
-        try { saved = JSON.parse(localStorage.getItem("lal_user") || "{}"); } catch {}
+        // Check localStorage for saved profile overrides (separate keys to avoid quota issues)
+        let savedName = null, savedAvatar = null;
+        try { savedName = localStorage.getItem("lal_user_name"); } catch {}
+        try { savedAvatar = localStorage.getItem("lal_user_avatar"); } catch {}
+        // Migration: read old combined key if new keys don't exist
+        if (!savedName) {
+          try { const old = JSON.parse(localStorage.getItem("lal_user") || "{}"); savedName = old.name; savedAvatar = savedAvatar || old.avatar; localStorage.removeItem("lal_user"); } catch {}
+        }
         setUser({
           id: u.id,
-          name: saved.name || u.user_metadata?.full_name || u.email.split("@")[0],
+          name: savedName || u.user_metadata?.full_name || u.email.split("@")[0],
           email: u.email,
-          avatar: saved.avatar || u.user_metadata?.avatar_url || null,
+          avatar: savedAvatar || u.user_metadata?.avatar_url || null,
         });
       }
       setAuthLoading(false);
@@ -103,9 +108,18 @@ export default function App() {
 
   const handleUpdateUser = async (updates) => {
     setUser(prev => ({ ...prev, ...updates }));
-    // Persist to localStorage for immediate reload
-    try { localStorage.setItem("lal_user", JSON.stringify({ ...user, ...updates })); } catch {}
-    // Also persist name to Supabase user metadata
+    // Persist name to localStorage (small, safe)
+    try { localStorage.setItem("lal_user_name", updates.name || ""); } catch {}
+    // Persist avatar separately — compressed images should be small, but catch quota errors
+    if (updates.avatar) {
+      try { localStorage.setItem("lal_user_avatar", updates.avatar); } catch (e) {
+        console.warn("Avatar too large for localStorage, saving to Supabase only:", e.message);
+        try { localStorage.removeItem("lal_user_avatar"); } catch {}
+      }
+    }
+    // Remove old combined key if present (was causing quota issues)
+    try { localStorage.removeItem("lal_user"); } catch {}
+    // Persist to Supabase user metadata
     try {
       await supabase.auth.updateUser({ data: { full_name: updates.name, avatar_url: updates.avatar } });
     } catch {}
