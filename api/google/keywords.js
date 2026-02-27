@@ -12,7 +12,7 @@ const GSC_API_BASE = "https://www.googleapis.com/webmasters/v3";
 const SITE_URLS = {
   lakewood:  "sc-domain:lifeatlakewood.com",
   wellen:    "sc-domain:lifeinwellenpark.com",
-  parrish:   "sc-domain:lifeatparrish.com",
+  parrish:   "https://www.lifeatparrish.com/",
   longboat:  "sc-domain:lifeinlongboatkey.com",
 };
 
