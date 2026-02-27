@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { site, property, days = "90" } = req.query;
+  const { site, property, days = "90", dimension } = req.query;
 
   // Determine the GSC site URL
   let gscSiteUrl;
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
     const { startDate, endDate } = getDateRange(parseInt(days));
 
     // Fetch search analytics from GSC
+    const useDimension = dimension === "page" ? "page" : "query";
     const gscRes = await fetch(
       `${GSC_API_BASE}/sites/${encodeURIComponent(gscSiteUrl)}/searchAnalytics/query`,
       {
@@ -95,7 +96,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           startDate,
           endDate,
-          dimensions: ["query"],
+          dimensions: [useDimension],
           rowLimit: 100,
           dataState: "all",
         }),
@@ -109,6 +110,7 @@ export default async function handler(req, res) {
       if (gscRes.status === 403) {
         return res.status(200).json({
           keywords: [],
+          pages: [],
           connected: false,
           message: "No access to this property in Google Search Console. Make sure the account has access.",
         });
@@ -120,7 +122,25 @@ export default async function handler(req, res) {
     const data = await gscRes.json();
     const rows = data.rows || [];
 
-    // Map GSC data to our keyword format
+    // Page dimension: return per-URL click data
+    if (useDimension === "page") {
+      const pages = rows.map(row => ({
+        url: row.keys[0],
+        clicks: row.clicks,
+        impressions: row.impressions,
+        ctr: Math.round(row.ctr * 10000) / 100,
+        position: Math.round(row.position * 10) / 10,
+      })).sort((a, b) => b.clicks - a.clicks);
+
+      return res.status(200).json({
+        pages,
+        connected: true,
+        dateRange: { startDate, endDate },
+        total: pages.length,
+      });
+    }
+
+    // Query dimension: return keyword data
     const keywords = rows.map(row => ({
       kw: row.keys[0],
       vol: Math.round(row.impressions / (parseInt(days) / 30)), // Estimate monthly volume from impressions

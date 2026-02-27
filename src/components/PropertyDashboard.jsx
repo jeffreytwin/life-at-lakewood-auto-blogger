@@ -20,47 +20,34 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
   const curMonth = now.getMonth();
   const curYear = now.getFullYear();
 
-  // Fetch real GSC data for this property
-  const [gscData, setGscData] = useState(null);
+  // Fetch page-level GSC data for Top Articles (per-URL clicks — no keyword matching needed)
+  const [gscPages, setGscPages] = useState(null);
   const [gscConnected, setGscConnected] = useState(false);
-  const [gscLoaded, setGscLoaded] = useState(false);
   useEffect(() => {
-    fetch(`/api/google/keywords?property=${prop.id}`)
+    fetch(`/api/google/keywords?property=${prop.id}&dimension=page`)
       .then(r => r.json())
       .then(data => {
         setGscConnected(!!data.connected);
-        if (data.connected && data.keywords?.length > 0) setGscData(data.keywords);
-        setGscLoaded(true);
+        if (data.connected && data.pages?.length > 0) setGscPages(data.pages);
       })
-      .catch(() => { setGscLoaded(true); });
+      .catch(() => {});
   }, [prop.id]);
 
-  // Build top articles from real GSC data when available
   const publishedArts = arts.filter(a => a.status === "published");
   const publishedThisMonth = publishedArts.filter(a => a.month === curMonth && a.year === curYear);
 
-  // Match GSC keyword data to published articles (only when GSC is truly connected)
+  // Build top articles from GSC page data — extract article title from URL slug
   const allTopArticles = (() => {
-    if (gscConnected && gscData) {
-      // Build a map of keyword -> GSC data (take best clicks per keyword)
-      const gscMap = {};
-      gscData.forEach(g => { const k = (g.kw || "").toLowerCase().trim(); if (k && (!gscMap[k] || g.clicks > gscMap[k].clicks)) gscMap[k] = g; });
-      // Match articles to GSC data by keyword or title words
-      const usedGscIds = new Set();
-      return publishedArts.map(a => {
-        const artKw = (a.kw || "").toLowerCase().trim();
-        // Only match by keyword if the article has a non-empty keyword
-        const exactMatch = artKw ? gscMap[artKw] : null;
-        const fuzzyMatch = !exactMatch && artKw ? gscData.find(g => {
-          const q = (g.kw || "").toLowerCase().trim();
-          return q && !usedGscIds.has(q) && (a.title.toLowerCase().includes(q) || q.includes(artKw));
-        }) : null;
-        const match = exactMatch || fuzzyMatch;
-        if (match) usedGscIds.add((match.kw || "").toLowerCase().trim());
-        return match ? { t: a.title, c: match.clicks || 0, p: Math.round((match.position || 0) * 10) / 10 } : null;
-      }).filter(Boolean).sort((a, b) => b.c - a.c);
-    }
-    return [];
+    if (!gscConnected || !gscPages) return [];
+    // Only include blog post URLs (contain /post/)
+    return gscPages
+      .filter(p => p.url && p.url.includes("/post/") && p.clicks > 0)
+      .map(p => {
+        // Extract title from URL slug: /post/my-article-title → My Article Title
+        const slug = p.url.split("/post/")[1]?.split(/[?#]/)[0] || "";
+        const title = slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+        return { t: title, c: p.clicks, p: p.position, url: p.url };
+      });
   })();
 
   const recentActivity = arts.slice().sort((a, b) => {
@@ -156,7 +143,7 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
           ) : (showAllArticles ? allTopArticles : allTopArticles.slice(0, 3)).map((a,i)=>(
             <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:i<(showAllArticles?allTopArticles.length:3)-1?`1px solid ${border}`:"none" }}>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2 }}>{a.t}</div>
+                <a href={a.url} target="_blank" rel="noreferrer" style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2, textDecoration:"none", display:"block" }}>{a.t}</a>
                 <div style={{ fontSize:11, color:muted }}>Avg. Position: {a.p}</div>
               </div>
               <div style={{ textAlign:"right", marginLeft:14 }}>
