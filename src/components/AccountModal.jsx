@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
 import { supabase } from "../lib/supabase";
 
 export default function AccountModal({ user, onUpdate, goals, setGoals, writingStyle, setWritingStyle, darkMode, setDarkMode, onClose, onSignOut }) {
-  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display" | "connections"
+  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display"
   const [name, setName]         = useState(user.name);
   const [email, setEmail]       = useState(user.email);
   const [preview, setPreview]   = useState(user.avatar);
@@ -15,15 +15,6 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwMsg, setPwMsg]       = useState("");
   const [pwLoading, setPwLoading] = useState(false);
-  const [gscConnected, setGscConnected] = useState(false);
-
-  // Check GSC connection status — validate the token actually works
-  useEffect(() => {
-    fetch("/api/google/auth?check")
-      .then(r => r.ok ? r.json() : null)
-      .then(data => setGscConnected(!!data?.connected))
-      .catch(() => setGscConnected(false));
-  }, []);
 
   // Dark mode palette
   const dm       = darkMode;
@@ -116,7 +107,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
           </div>
           {/* Tabs */}
           <div style={{ display:"flex", gap:0 }}>
-            {[["profile","Profile"],["goals","Monthly Goals"],["writing","Writing Style"],["connections","Connections"],["display","Display"]].map(([t,label]) => (
+            {[["profile","Profile"],["goals","Monthly Goals"],["writing","Writing Style"],["display","Display"]].map(([t,label]) => (
               <button key={t} onClick={()=>setTab(t)} style={{ padding:"8px 16px", border:"none", borderBottom:`2px solid ${tab===t?accentTab:"transparent"}`, background:"none", fontSize:13, fontWeight:tab===t?700:500, color:tab===t?accentTab:tabInactive, cursor:"pointer", transition:"all 0.15s" }}>
                 {label}
               </button>
@@ -222,86 +213,6 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
               <div style={{ fontSize:11, color:textDim, marginTop:8 }}>
                 These preferences will be included in every article generation prompt sent to Claude.
               </div>
-            </div>
-          )}
-
-          {tab === "connections" && (
-            <div>
-              <p style={{ fontSize:13, color:textMut, margin:"0 0 20px" }}>
-                Connect external services to unlock real data for keyword research and blog management.
-              </p>
-
-              {/* Connector card style — consistent for all three */}
-              {[
-                {
-                  name: "Google Search Console",
-                  desc: "Real keyword data, clicks, impressions, and rankings",
-                  connected: gscConnected,
-                  logoBg: dm ? "#1E293B" : "#fff",
-                  logoBorder: `1px solid ${borderInp}`,
-                  logo: (
-                    <svg width="20" height="20" viewBox="0 0 48 48">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                      <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.0 24.0 0 000 21.56l7.98-6.19z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg>
-                  ),
-                  connectUrl: "/api/google/auth",
-                  connectLabel: "Connect Google Account",
-                  connectColor: "#4285F4",
-                },
-                {
-                  name: "Wix Blog",
-                  desc: "Push articles directly to your Wix blog as drafts",
-                  connected: true,
-                  logoBg: "#0C6EFC",
-                  logoBorder: "none",
-                  logo: (
-                    <svg width="24" height="12" viewBox="0 0 40 16" fill="none">
-                      <path d="M9.2 0.5l-1.5 9.3L5.5 3 3.3 9.8 1.1 0.5H0L3.3 15.5l2.2-6.8 2.2 6.8L11 0.5H9.2z" fill="#fff"/>
-                      <path d="M13.3 3.5c0-.8.6-1.4 1.4-1.4.8 0 1.4.6 1.4 1.4v-3h1.2V12h-1.2V3.5c0-.1-.1-.2-.2-.2-.1 0-.2.1-.2.2V12h-1.2V3.5c0-.1-.1-.2-.2-.2-.1 0-.2.1-.2.2V12h-1.2V3.5z" fill="#fff"/>
-                      <path d="M22.5 12l-2.8-5.5L22.5 1h-1.4l-2.1 4.3V1h-1.2v11h1.2V7l2.1 5h1.4z" fill="#fff"/>
-                    </svg>
-                  ),
-                },
-                {
-                  name: "Claude AI",
-                  desc: "Article generation, keyword ideas, and revisions",
-                  connected: true,
-                  logoBg: "#D97757",
-                  logoBorder: "none",
-                  logo: (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M13.74 3.6L19.6 12l-5.86 8.4h-3.48L16.12 12 10.26 3.6h3.48z" fill="#fff"/>
-                      <path d="M7.74 3.6L4.26 3.6 10.12 12l-5.86 8.4h3.48L13.6 12 7.74 3.6z" fill="#fff"/>
-                    </svg>
-                  ),
-                },
-              ].map((svc, idx) => (
-                <div key={idx} style={{ padding:"16px 18px", background:panelBg, borderRadius:12, border:`1px solid ${borderC}`, marginBottom:idx < 2 ? 12 : 0 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                    <div style={{ width:40, height:40, borderRadius:10, background:svc.logoBg, border:svc.logoBorder, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                      {svc.logo}
-                    </div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:textPri }}>{svc.name}</div>
-                      <div style={{ fontSize:11, color:textDim, marginTop:1 }}>{svc.desc}</div>
-                    </div>
-                    {svc.connected ? (
-                      <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                        <span style={{ fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:6, background:dm?"#052E16":"#DCFCE7", color:"#16A34A" }}>Connected</span>
-                        {svc.connectUrl && <a href={svc.connectUrl} target="_blank" rel="noreferrer" style={{ fontSize:11, color:svc.connectColor || textMut, textDecoration:"none", fontWeight:600 }}>Reconnect</a>}
-                      </div>
-                    ) : (
-                      <a href={svc.connectUrl} target="_blank" rel="noreferrer"
-                        style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:svc.connectColor, color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, flexShrink:0 }}>
-                        {svc.connectLabel || "Connect"}
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           )}
 
