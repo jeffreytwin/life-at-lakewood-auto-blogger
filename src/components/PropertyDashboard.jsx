@@ -22,30 +22,41 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
 
   // Fetch real GSC data for this property
   const [gscData, setGscData] = useState(null);
+  const [gscConnected, setGscConnected] = useState(false);
+  const [gscLoaded, setGscLoaded] = useState(false);
   useEffect(() => {
     fetch(`/api/google/keywords?property=${prop.id}`)
       .then(r => r.json())
-      .then(data => { if (data.connected && data.keywords?.length > 0) setGscData(data.keywords); })
-      .catch(() => {});
+      .then(data => {
+        setGscConnected(!!data.connected);
+        if (data.connected && data.keywords?.length > 0) setGscData(data.keywords);
+        setGscLoaded(true);
+      })
+      .catch(() => { setGscLoaded(true); });
   }, [prop.id]);
 
   // Build top articles from real GSC data when available
   const publishedArts = arts.filter(a => a.status === "published");
   const publishedThisMonth = publishedArts.filter(a => a.month === curMonth && a.year === curYear);
 
-  // Match GSC keyword data to published articles
+  // Match GSC keyword data to published articles (only when GSC is truly connected)
   const allTopArticles = (() => {
-    if (gscData) {
+    if (gscConnected && gscData) {
       // Build a map of keyword -> GSC data (take best clicks per keyword)
       const gscMap = {};
-      gscData.forEach(g => { const k = (g.kw || "").toLowerCase(); if (!gscMap[k] || g.clicks > gscMap[k].clicks) gscMap[k] = g; });
+      gscData.forEach(g => { const k = (g.kw || "").toLowerCase().trim(); if (k && (!gscMap[k] || g.clicks > gscMap[k].clicks)) gscMap[k] = g; });
       // Match articles to GSC data by keyword or title words
+      const usedGscIds = new Set();
       return publishedArts.map(a => {
-        const artKw = (a.kw || "").toLowerCase();
-        const match = gscMap[artKw] || gscData.find(g => {
-          const q = (g.kw || "").toLowerCase();
-          return a.title.toLowerCase().includes(q) || q.includes(artKw);
-        });
+        const artKw = (a.kw || "").toLowerCase().trim();
+        // Only match by keyword if the article has a non-empty keyword
+        const exactMatch = artKw ? gscMap[artKw] : null;
+        const fuzzyMatch = !exactMatch && artKw ? gscData.find(g => {
+          const q = (g.kw || "").toLowerCase().trim();
+          return q && !usedGscIds.has(q) && (a.title.toLowerCase().includes(q) || q.includes(artKw));
+        }) : null;
+        const match = exactMatch || fuzzyMatch;
+        if (match) usedGscIds.add((match.kw || "").toLowerCase().trim());
         return match ? { t: a.title, c: match.clicks || 0, p: Math.round((match.position || 0) * 10) / 10 } : null;
       }).filter(Boolean).sort((a, b) => b.c - a.c);
     }
@@ -129,8 +140,18 @@ export default function PropertyDashboard({ prop, articles: ARTICLES = [], onSta
             {showAllArticles && <button onClick={()=>setShowAllArticles(false)} style={{ fontSize:11, fontWeight:700, color:muted, background:"none", border:"none", cursor:"pointer", padding:0 }}>Show Less</button>}
           </div>
           {allTopArticles.length === 0 ? (
-            <div style={{ padding:"20px 0", textAlign:"center", color:muted, fontSize:12 }}>
-              {gscData === null ? "Connect Google Search Console in Settings to see real performance data." : "No matching GSC data found for published articles yet."}
+            <div style={{ padding:"24px 10px", textAlign:"center" }}>
+              <div style={{ fontSize:28, marginBottom:10 }}>📊</div>
+              <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:4 }}>N/A</div>
+              <div style={{ fontSize:12, color:muted, marginBottom:12 }}>
+                {gscConnected ? "No matching data found for published articles yet." : "Connect Google Search Console to see real click and ranking data."}
+              </div>
+              {!gscConnected && (
+                <a href="/api/google/auth" target="_blank" rel="noreferrer"
+                  style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700 }}>
+                  Connect Google Search Console
+                </a>
+              )}
             </div>
           ) : (showAllArticles ? allTopArticles : allTopArticles.slice(0, 3)).map((a,i)=>(
             <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:i<(showAllArticles?allTopArticles.length:3)-1?`1px solid ${border}`:"none" }}>

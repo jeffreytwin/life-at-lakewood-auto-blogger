@@ -17,12 +17,21 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const [pwLoading, setPwLoading] = useState(false);
   const [gscConnected, setGscConnected] = useState(false);
 
-  // Check GSC connection status
+  // Check GSC connection status — only mark connected if the API returns keywords
   useEffect(() => {
     fetch("/api/google/keywords?property=lakewood")
-      .then(r => r.json())
-      .then(data => { if (data.connected) setGscConnected(true); })
-      .catch(() => {});
+      .then(r => {
+        if (!r.ok) { setGscConnected(false); return null; }
+        return r.json();
+      })
+      .then(data => {
+        if (data && data.connected && data.keywords && data.keywords.length > 0) {
+          setGscConnected(true);
+        } else {
+          setGscConnected(false);
+        }
+      })
+      .catch(() => { setGscConnected(false); });
   }, []);
 
   const handlePasswordChange = async () => {
@@ -220,8 +229,13 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
               {/* Google Search Console */}
               <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" fill="#4285F4"/></svg>
+                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                      <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.0 24.0 0 000 21.56l7.98-6.19z"/>
+                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Google Search Console</div>
@@ -249,8 +263,14 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
               {/* Wix */}
               <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22.5 4.5l-3 15-4.5-9-4.5 9-3-15-4.5 15h-3L6 1.5l4.5 9L15 1.5l4.5 9L22.5 4.5z" fill="#0C6EFC"/></svg>
+                  <div style={{ width:36, height:36, borderRadius:8, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="22" height="10" viewBox="0 0 50 22" fill="none">
+                      <path d="M10.4 0L7.8 14.3 5.2 4.5 2.6 14.3 0 0h4.2l1 7.5L7.8 0h0l2.6 7.5 1-7.5H15.5L10.4 0z" fill="#fff"/>
+                      <path d="M17 0h3.8v14.3H17V0z" fill="#fff"/>
+                      <path d="M26.8 0l-2.4 5.5L22 0h-4.3l4.7 8.5v5.8h3.8V8.5l4.8-8.5h-4.2z" fill="#fff"/>
+                      <path d="M35 9.5a1.8 1.8 0 100-3.6 1.8 1.8 0 000 3.6z" fill="#FBBC04"/>
+                      <path d="M40.5 2.5c-1.1 0-2 .45-2.6 1.2l-.1-1h-3.3v14.3h3.5V9c0-1.5.7-2.3 1.8-2.3.9 0 1.5.6 1.5 1.7v5.9h3.5V7.7c0-3.2-1.7-5.2-4.3-5.2z" fill="#fff"/>
+                    </svg>
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Wix Blog</div>
@@ -263,8 +283,11 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
               {/* Claude AI */}
               <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div style={{ width:36, height:36, borderRadius:8, background:"#D4A27F", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M16.98 2.804L12 7.19 7.02 2.804a.5.5 0 00-.72.058L3.06 7.073a.5.5 0 00.017.66L12 16.5l8.923-8.767a.5.5 0 00.017-.66l-3.24-4.21a.5.5 0 00-.72-.059z" fill="#fff"/>
+                      <circle cx="12" cy="18.5" r="2.5" fill="#fff"/>
+                    </svg>
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Claude AI</div>
