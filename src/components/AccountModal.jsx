@@ -90,7 +90,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
-      <div style={{ background:"#fff", borderRadius:18, width:460, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
+      <div style={{ background:"#fff", borderRadius:18, width:580, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
         <div style={{ padding:"22px 28px 0", borderBottom:"1px solid #F3F4F6" }}>
@@ -217,76 +217,77 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                 Connect external services to unlock real data for keyword research and blog management.
               </p>
 
-              {/* Google Search Console */}
-              <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:"#fff", border:"1px solid #E5E7EB", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              {/* Connector card style — consistent for all three */}
+              {[
+                {
+                  name: "Google Search Console",
+                  desc: "Real keyword data, clicks, impressions, and rankings",
+                  connected: gscConnected,
+                  logoBg: "#fff",
+                  logoBorder: "1px solid #E5E7EB",
+                  logo: (
                     <svg width="20" height="20" viewBox="0 0 48 48">
                       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
                       <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
                       <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.0 24.0 0 000 21.56l7.98-6.19z"/>
                       <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                     </svg>
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Google Search Console</div>
-                    <div style={{ fontSize:11, color:"#9CA3AF" }}>Real keyword data, clicks, impressions, and rankings</div>
-                  </div>
-                </div>
-                {gscConnected ? (
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
-                    <a href="/api/google/auth" target="_blank" rel="noreferrer" style={{ fontSize:10, color:"#4285F4", textDecoration:"none", fontWeight:700 }}>Reconnect</a>
-                  </div>
-                ) : (
-                  <a
-                    href="/api/google/auth"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:"#4285F4", color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, cursor:"pointer" }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                    Connect Google Account
-                  </a>
-                )}
-              </div>
-
-              {/* Wix */}
-              <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:12 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:"#000", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <svg width="22" height="10" viewBox="0 0 50 22" fill="none">
-                      <path d="M10.4 0L7.8 14.3 5.2 4.5 2.6 14.3 0 0h4.2l1 7.5L7.8 0h0l2.6 7.5 1-7.5H15.5L10.4 0z" fill="#fff"/>
-                      <path d="M17 0h3.8v14.3H17V0z" fill="#fff"/>
-                      <path d="M26.8 0l-2.4 5.5L22 0h-4.3l4.7 8.5v5.8h3.8V8.5l4.8-8.5h-4.2z" fill="#fff"/>
-                      <path d="M35 9.5a1.8 1.8 0 100-3.6 1.8 1.8 0 000 3.6z" fill="#FBBC04"/>
-                      <path d="M40.5 2.5c-1.1 0-2 .45-2.6 1.2l-.1-1h-3.3v14.3h3.5V9c0-1.5.7-2.3 1.8-2.3.9 0 1.5.6 1.5 1.7v5.9h3.5V7.7c0-3.2-1.7-5.2-4.3-5.2z" fill="#fff"/>
+                  ),
+                  connectUrl: "/api/google/auth",
+                  connectLabel: "Connect Google Account",
+                  connectColor: "#4285F4",
+                },
+                {
+                  name: "Wix Blog",
+                  desc: "Push articles directly to your Wix blog as drafts",
+                  connected: true,
+                  logoBg: "#0C6EFC",
+                  logoBorder: "none",
+                  logo: (
+                    <svg width="24" height="12" viewBox="0 0 40 16" fill="none">
+                      <path d="M9.2 0.5l-1.5 9.3L5.5 3 3.3 9.8 1.1 0.5H0L3.3 15.5l2.2-6.8 2.2 6.8L11 0.5H9.2z" fill="#fff"/>
+                      <path d="M13.3 3.5c0-.8.6-1.4 1.4-1.4.8 0 1.4.6 1.4 1.4v-3h1.2V12h-1.2V3.5c0-.1-.1-.2-.2-.2-.1 0-.2.1-.2.2V12h-1.2V3.5c0-.1-.1-.2-.2-.2-.1 0-.2.1-.2.2V12h-1.2V3.5z" fill="#fff"/>
+                      <path d="M22.5 12l-2.8-5.5L22.5 1h-1.4l-2.1 4.3V1h-1.2v11h1.2V7l2.1 5h1.4z" fill="#fff"/>
                     </svg>
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Wix Blog</div>
-                    <div style={{ fontSize:11, color:"#9CA3AF" }}>Push articles to your Wix blog drafts</div>
-                  </div>
-                  <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
-                </div>
-              </div>
-
-              {/* Claude AI */}
-              <div style={{ padding:"16px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:"#D4A27F", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M16.98 2.804L12 7.19 7.02 2.804a.5.5 0 00-.72.058L3.06 7.073a.5.5 0 00.017.66L12 16.5l8.923-8.767a.5.5 0 00.017-.66l-3.24-4.21a.5.5 0 00-.72-.059z" fill="#fff"/>
-                      <circle cx="12" cy="18.5" r="2.5" fill="#fff"/>
+                  ),
+                },
+                {
+                  name: "Claude AI",
+                  desc: "Article generation, keyword ideas, and revisions",
+                  connected: true,
+                  logoBg: "#D97757",
+                  logoBorder: "none",
+                  logo: (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M13.74 3.6L19.6 12l-5.86 8.4h-3.48L16.12 12 10.26 3.6h3.48z" fill="#fff"/>
+                      <path d="M7.74 3.6L4.26 3.6 10.12 12l-5.86 8.4h3.48L13.6 12 7.74 3.6z" fill="#fff"/>
                     </svg>
+                  ),
+                },
+              ].map((svc, idx) => (
+                <div key={idx} style={{ padding:"16px 18px", background:"#F9FAFB", borderRadius:12, border:"1px solid #F3F4F6", marginBottom:idx < 2 ? 12 : 0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                    <div style={{ width:40, height:40, borderRadius:10, background:svc.logoBg, border:svc.logoBorder, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      {svc.logo}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>{svc.name}</div>
+                      <div style={{ fontSize:11, color:"#9CA3AF", marginTop:1 }}>{svc.desc}</div>
+                    </div>
+                    {svc.connected ? (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                        <span style={{ fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
+                        {svc.connectUrl && <a href={svc.connectUrl} target="_blank" rel="noreferrer" style={{ fontSize:11, color:svc.connectColor || "#6B7280", textDecoration:"none", fontWeight:600 }}>Reconnect</a>}
+                      </div>
+                    ) : (
+                      <a href={svc.connectUrl} target="_blank" rel="noreferrer"
+                        style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 16px", background:svc.connectColor, color:"#fff", borderRadius:8, textDecoration:"none", fontSize:12, fontWeight:700, flexShrink:0 }}>
+                        {svc.connectLabel || "Connect"}
+                      </a>
+                    )}
                   </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>Claude AI</div>
-                    <div style={{ fontSize:11, color:"#9CA3AF" }}>Article generation, keyword ideas, and revisions</div>
-                  </div>
-                  <span style={{ fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:6, background:"#DCFCE7", color:"#16A34A" }}>Connected</span>
                 </div>
-              </div>
+              ))}
             </div>
           )}
 
