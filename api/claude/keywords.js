@@ -26,6 +26,22 @@ const SCHEMA = {
 };
 
 export default async function handler(req, res) {
+  // GET /api/claude/keywords?health → verify the Anthropic key + model with a
+  // minimal request, so "are our APIs online?" has a one-click answer.
+  if (req.method === "GET" && req.query?.health !== undefined) {
+    try {
+      const client = getClient();
+      const ping = await client.messages.create({
+        model: MODEL,
+        max_tokens: 512,
+        messages: [{ role: "user", content: "Reply with the single word: ok" }],
+      });
+      return res.status(200).json({ ok: true, model: ping.model });
+    } catch (error) {
+      return sendClaudeError(res, error, "Claude health check");
+    }
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
