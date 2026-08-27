@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import useMobile from "./hooks/useMobile";
 import { supabase } from "./lib/supabase";
+import { fetchSettings, saveSettings } from "./services/api";
 import { PROPS } from "./data/properties";
 import { ARTICLES as MOCK_ARTICLES } from "./data/mock-articles";
 import NavBtn from "./components/ui/NavBtn";
@@ -18,8 +19,31 @@ export default function App() {
   const [darkMode, setDarkMode]       = useState(() => { try { return localStorage.getItem("lal_darkMode") === "true"; } catch { return false; } });
   const [goals, setGoals]             = useState(() => { try { const s = localStorage.getItem("lal_goals"); return s ? JSON.parse(s) : { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } catch { return { lakewood: 4, wellen: 4, parrish: 4, longboat: 4 }; } });
   const [writingStyle, setWritingStyle] = useState(() => { try { return localStorage.getItem("lal_writingStyle") || ""; } catch { return ""; } });
+  // Per-property business goals ({ lakewood: "...", ... }) — drive keyword
+  // scoring and article generation. Synced to Supabase via /api/settings.
+  const [bizGoals, setBizGoals]       = useState(() => { try { const s = localStorage.getItem("lal_bizGoals"); return s ? JSON.parse(s) : {}; } catch { return {}; } });
   const [articles, setArticles]       = useState(MOCK_ARTICLES);
   const [articlesLoading, setArticlesLoading] = useState(false);
+
+  // Load shared settings from the server (Supabase-backed) — they win over
+  // this browser's localStorage so all devices stay in sync.
+  useEffect(() => {
+    fetchSettings().then((settings) => {
+      if (settings.business_goals && typeof settings.business_goals === "object") setBizGoals(settings.business_goals);
+      if (typeof settings.writing_style === "string" && settings.writing_style) setWritingStyle(settings.writing_style);
+    }).catch(() => { /* offline or not configured — localStorage values stand */ });
+  }, []);
+
+  // Persist strategy settings: localStorage immediately, server best-effort
+  const handleSaveStrategy = useCallback((nextGoals, nextStyle) => {
+    setBizGoals(nextGoals);
+    setWritingStyle(nextStyle);
+    try { localStorage.setItem("lal_bizGoals", JSON.stringify(nextGoals)); } catch {}
+    try { localStorage.setItem("lal_writingStyle", nextStyle); } catch {}
+    saveSettings({ business_goals: nextGoals, writing_style: nextStyle }).catch((e) =>
+      console.warn("Could not sync settings to server:", e.message)
+    );
+  }, []);
 
   // Fetch articles from Wix via our API
   const refreshArticles = useCallback(async () => {
@@ -153,7 +177,7 @@ export default function App() {
         }
       `}</style>
 
-      {showAccount && <AccountModal user={user} onUpdate={handleUpdateUser} goals={goals} setGoals={setGoals} writingStyle={writingStyle} setWritingStyle={setWritingStyle} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={handleSignOut} />}
+      {showAccount && <AccountModal user={user} onUpdate={handleUpdateUser} goals={goals} setGoals={setGoals} writingStyle={writingStyle} bizGoals={bizGoals} onSaveStrategy={handleSaveStrategy} darkMode={darkMode} setDarkMode={setDarkMode} onClose={()=>setShowAccount(false)} onSignOut={handleSignOut} />}
 
       {/* Sidebar overlay */}
       {mob && sidebarOpen && (
@@ -231,7 +255,7 @@ export default function App() {
         {activeProp && <div style={{ height:3, background:`linear-gradient(90deg,${activeProp.color},${activeProp.accent})` }} />}
         {view === "calendar" && <CalendarView articles={articles} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} goals={goals} mob={mob} onRefresh={refreshArticles} refreshing={articlesLoading} onReviewChecklist={(articleId) => { const a = articles.find(x=>x.id===articleId); if(a) { setView(a.p+"_workflow__review__"+a.id); } }} />}
         {activeProp && !isWorkflow && <PropertyDashboard prop={activeProp} articles={articles} onStartWorkflow={(mode, article) => { if(mode==="review") setView(propId+"_workflow__review__"+article.id); else goToWorkflow(propId); }} goals={goals} dm={dm} bg={bg} card={card} border={border} text={text} muted={muted} mob={mob} onRefresh={refreshArticles} refreshing={articlesLoading} />}
-        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} articles={articles} onBack={() => { refreshArticles(); goBack(); }} dm={dm} bg={bg} viewStr={view} mob={mob} writingStyle={writingStyle} onRefreshArticles={refreshArticles} />}
+        {activeProp && isWorkflow  && <WorkflowView prop={activeProp} articles={articles} onBack={() => { refreshArticles(); goBack(); }} dm={dm} bg={bg} viewStr={view} mob={mob} writingStyle={writingStyle} businessGoals={bizGoals[propId] || ""} onRefreshArticles={refreshArticles} />}
         </div>
       </div>
     </div>

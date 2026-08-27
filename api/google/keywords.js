@@ -85,8 +85,8 @@ export default async function handler(req, res) {
 
     // Fetch search analytics from GSC
     const useDimension = dimension === "page" ? "page" : "query";
-    const gscRes = await fetch(
-      `${GSC_API_BASE}/sites/${encodeURIComponent(gscSiteUrl)}/searchAnalytics/query`,
+    const queryGsc = (siteUrl) => fetch(
+      `${GSC_API_BASE}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
       {
         method: "POST",
         headers: {
@@ -102,6 +102,19 @@ export default async function handler(req, res) {
         }),
       }
     );
+
+    let gscRes = await queryGsc(gscSiteUrl);
+
+    // Some sites are registered in GSC as URL-prefix properties rather than
+    // domain properties (this is why Parrish uses the https:// form). If the
+    // domain property is denied, retry with the URL-prefix form.
+    if (gscRes.status === 403 && gscSiteUrl.startsWith("sc-domain:")) {
+      const domain = gscSiteUrl.replace("sc-domain:", "");
+      const fallbackUrl = `https://www.${domain}/`;
+      console.warn(`GSC 403 for ${gscSiteUrl}, retrying as ${fallbackUrl}`);
+      const fallbackRes = await queryGsc(fallbackUrl);
+      if (fallbackRes.ok) gscRes = fallbackRes;
+    }
 
     if (!gscRes.ok) {
       const text = await gscRes.text();

@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef } from "react";
+import { generateArticleContent } from "../../services/api";
 
-export default function StepGenerating({ prop, count, articles, onDone, writingStyle }) {
+export default function StepGenerating({ prop, count, articles, onDone, onCancel, writingStyle, businessGoals = "", publishedTitles = [] }) {
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState(0);
-  const [genError, setGenError] = useState(null);
+  // Per-article status: "pending" | "done" | error message string
+  const [statuses, setStatuses] = useState(() => articles.map(() => "pending"));
+  const [failed, setFailed] = useState(false);
   const doneRef = useRef(false);
   const fetchedRef = useRef(false);
+  const resultsRef = useRef(articles.map(() => null));
   const stages = [
-    "Fetching top-ranking competitors for each keyword…",
+    "Reviewing your business goals & published articles…",
     "Outlining article structure & H2 headings…",
     "Writing introduction and body sections…",
     "Weaving in primary & secondary keywords naturally…",
-    "Adding internal links & calls to action…",
+    "Adding internal link mentions & calls to action…",
     "Writing SEO title, meta description & slug…",
     "Final quality checks & formatting…",
     "So close! Adding polish and the finishing touches…",
@@ -19,90 +23,94 @@ export default function StepGenerating({ prop, count, articles, onDone, writingS
 
   // Animate the progress bar — ramps to 85% quickly, then slows asymptotically
   useEffect(() => {
-    if (genError || doneRef.current) return;
+    if (failed || doneRef.current) return;
     const t = setInterval(() => {
       setProgress(p => {
         if (doneRef.current) { clearInterval(t); return 100; }
         if (p < 85) return p + 0.8;
-        // After 85%, slow down — keeps moving so user sees activity
         const remaining = 99 - p;
         return p + remaining * 0.008;
       });
     }, 70);
     return () => clearInterval(t);
-  }, [genError]);
+  }, [failed]);
 
-  // Fetch real article content from Claude
+  const generateAll = async (onlyFailed = false) => {
+    setFailed(false);
+    const targets = articles
+      .map((a, i) => ({ a, i }))
+      .filter(({ i }) => !onlyFailed || resultsRef.current[i] == null);
+
+    setStatuses((prev) => prev.map((s, i) => (targets.some(t => t.i === i) ? "pending" : s)));
+
+    await Promise.all(
+      targets.map(async ({ a, i }) => {
+        try {
+          const content = await generateArticleContent(a, prop, { writingStyle: writingStyle || "", businessGoals, publishedTitles });
+          resultsRef.current[i] = content;
+          setStatuses((prev) => { const n = [...prev]; n[i] = "done"; return n; });
+        } catch (e) {
+          setStatuses((prev) => { const n = [...prev]; n[i] = e.message || "Generation failed"; return n; });
+        }
+      })
+    );
+
+    if (resultsRef.current.every((r) => r != null)) {
+      doneRef.current = true;
+      setProgress(100);
+      setTimeout(() => onDone(resultsRef.current), 1200);
+    } else {
+      setFailed(true);
+    }
+  };
+
   useEffect(() => {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
-
-    const generateAll = async () => {
-      try {
-        const results = await Promise.all(
-          articles.map(async (article) => {
-            // 2-minute timeout per article to prevent indefinite hanging
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 120000);
-            try {
-              const res = await fetch("/api/claude/generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                signal: controller.signal,
-                body: JSON.stringify({
-                  title: article.title,
-                  keyword: article.kw,
-                  property: prop.short,
-                  propertyUrl: prop.url,
-                  blogUrl: prop.blog,
-                  writingStyle: writingStyle || "",
-                }),
-              });
-              clearTimeout(timeout);
-              if (!res.ok) throw new Error(`Generation failed: ${res.status}`);
-              return res.json();
-            } catch (e) {
-              clearTimeout(timeout);
-              throw e;
-            }
-          })
-        );
-
-        // All articles generated — animate to 100% then call onDone
-        doneRef.current = true;
-        setProgress(100);
-        setTimeout(() => onDone(results), 1200);
-      } catch (err) {
-        console.error("Article generation error:", err);
-        setGenError(err.message);
-        // Fall back to mock content so the user can still proceed
-        const mockResults = articles.map((article) => {
-          const kw = article.kw;
-          const location = prop.short;
-          return {
-            seoTitle: `${article.title} | ${location} Real Estate Guide`,
-            metaDescription: `Discover everything you need to know about ${kw}. This comprehensive guide covers key facts, comparisons, and insider tips for ${location}, Florida home buyers.`,
-            slug: article.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-            sections: [
-              { heading: "Introduction", body: `If you've been researching ${kw}, you're not alone — it's one of the most searched topics among buyers exploring ${location}, Florida. Whether you're relocating from out of state, upgrading from a nearby area, or looking at investment opportunities, this guide will walk you through what you actually need to know.\n\nWe've pulled together data from Google Search Console, local MLS listings, and on-the-ground experience to give you an honest, up-to-date picture.` },
-              { heading: "Key Facts & Overview", body: `${location} has seen significant growth in the past two years, with new master-planned communities, expanding commercial corridors, and improved infrastructure drawing families and retirees alike.\n\nHere are the essential numbers:\n• Median home price: $385,000 – $520,000 depending on the community\n• Average days on market: 32 days\n• Property tax rate: approximately 1.1% of assessed value\n• Top school ratings: Several A-rated elementary and middle schools in the district` },
-              { heading: "What Buyers Should Know", body: `Before making a move, there are a few things specific to ${location} that most online guides skip. CDD fees can add $150–$300/month on top of your HOA, and they're often not included in the mortgage estimate you see online.\n\nNew construction timelines have improved — most builders are quoting 8–12 months for completion — but lot premiums on lakefront and preserve-view properties have climbed 15–20% since last year.\n\nIf you're comparing with other Southwest Florida communities, the main advantages here are newer infrastructure, walkability in the town center areas, and access to both Gulf beaches and I-75 for commuters.` },
-              { heading: "Our Recommendation", body: `For buyers seriously considering ${kw}, we recommend starting with a visit to the community welcome centers, where you can walk model homes and speak directly with builder reps. Pair that with a drive through the established neighborhoods during evening hours to get a feel for the day-to-day community vibe.\n\nReady to explore your options? Contact our team for a personalized neighborhood match based on your budget, timeline, and lifestyle preferences.` },
-            ],
-          };
-        });
-        doneRef.current = true;
-        setProgress(100);
-        setTimeout(() => onDone(mockResults), 1200);
-      }
-    };
-
     generateAll();
   }, []);
 
   useEffect(() => {
     setStage(Math.min(Math.floor(progress / (100 / stages.length)), stages.length - 1));
   }, [progress]);
+
+  const errorList = statuses
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => s !== "pending" && s !== "done");
+
+  if (failed) {
+    return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:420, textAlign:"center" }}>
+        <div style={{ width:72, height:72, borderRadius:"50%", background:"#FEF2F2", display:"flex", alignItems:"center", justifyContent:"center", fontSize:30, marginBottom:24 }}>⚠️</div>
+        <h2 style={{ fontFamily:"'Inter','DM Sans',system-ui,sans-serif", fontWeight:800, fontSize:16, color:"#B91C1C", margin:"0 0 8px" }}>
+          {errorList.length === articles.length ? "Article generation failed" : `${errorList.length} of ${articles.length} articles failed`}
+        </h2>
+        <div style={{ maxWidth:520, width:"100%", margin:"8px 0 20px", display:"flex", flexDirection:"column", gap:8 }}>
+          {articles.map((a, i) => (
+            <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start", padding:"10px 14px", background:statuses[i]==="done"?"#F0FDF4":"#FEF2F2", border:`1px solid ${statuses[i]==="done"?"#BBF7D0":"#FECACA"}`, borderRadius:10, textAlign:"left" }}>
+              <span style={{ fontSize:13 }}>{statuses[i]==="done" ? "✅" : "❌"}</span>
+              <div>
+                <div style={{ fontSize:12, fontWeight:700, color:"#111827" }}>{a.title}</div>
+                {statuses[i] !== "done" && <div style={{ fontSize:11, color:"#B91C1C", marginTop:2 }}>{statuses[i]}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={() => generateAll(true)}
+            style={{ padding:"11px 24px", background:prop.color, color:"#fff", border:"none", borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer" }}>
+            ↻ Retry Failed Article{errorList.length>1?"s":""}
+          </button>
+          {onCancel && (
+            <button onClick={onCancel}
+              style={{ padding:"11px 20px", background:"#F3F4F6", color:"#6B7280", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              Back to Keywords
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:420, textAlign:"center" }}>
@@ -122,9 +130,9 @@ export default function StepGenerating({ prop, count, articles, onDone, writingS
         </div>
       </div>
 
-      {genError && (
-        <div style={{ fontSize:12, color:"#F59E0B", background:"#FFFBEB", padding:"8px 14px", borderRadius:8, marginBottom:12, maxWidth:480 }}>
-          API unavailable — using sample content. You can edit it in the next step.
+      {count > 1 && (
+        <div style={{ fontSize:11, color:"#9CA3AF", marginBottom:14 }}>
+          {statuses.filter(s => s === "done").length}/{count} finished
         </div>
       )}
 

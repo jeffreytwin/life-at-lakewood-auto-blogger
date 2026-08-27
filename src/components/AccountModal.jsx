@@ -3,14 +3,17 @@ import { PROPS } from "../data/properties";
 import { LOGOS } from "../data/logos";
 import { supabase } from "../lib/supabase";
 
-export default function AccountModal({ user, onUpdate, goals, setGoals, writingStyle, setWritingStyle, darkMode, setDarkMode, onClose, onSignOut }) {
-  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "writing" | "display"
+const GOAL_PLACEHOLDER = "e.g. Generate seller-ready buyer leads for new-construction homes. Prioritize transactional and commercial keywords. Audience: out-of-state relocators and 55+ buyers. Every article should funnel readers toward a community tour or a call with the team.";
+
+export default function AccountModal({ user, onUpdate, goals, setGoals, writingStyle, bizGoals = {}, onSaveStrategy, darkMode, setDarkMode, onClose, onSignOut }) {
+  const [tab, setTab]           = useState("profile"); // "profile" | "goals" | "strategy" | "writing" | "display"
   const [name, setName]         = useState(user.name);
   const [email, setEmail]       = useState(user.email);
   const [preview, setPreview]   = useState(user.avatar);
   const [saved, setSaved]       = useState(false);
   const [localGoals, setLocalGoals] = useState({...goals});
   const [localStyle, setLocalStyle] = useState(writingStyle || "");
+  const [localBizGoals, setLocalBizGoals] = useState({ ...bizGoals });
   const [newPassword, setNewPassword]     = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pwMsg, setPwMsg]       = useState("");
@@ -86,7 +89,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
   const handleSave = () => {
     onUpdate({ name, email, avatar: preview });
     setGoals(localGoals);
-    if (setWritingStyle) setWritingStyle(localStyle);
+    if (onSaveStrategy) onSaveStrategy(localBizGoals, localStyle);
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 800);
   };
@@ -95,7 +98,7 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
-      <div style={{ background:cardBg, borderRadius:18, width:580, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
+      <div style={{ background:cardBg, borderRadius:18, width:660, maxWidth:"93vw", maxHeight:"90vh", overflow:"hidden", display:"flex", flexDirection:"column", boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
         <div style={{ padding:"22px 28px 0", borderBottom:`1px solid ${borderC}` }}>
@@ -106,9 +109,9 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
             </button>
           </div>
           {/* Tabs */}
-          <div style={{ display:"flex", gap:0 }}>
-            {[["profile","Profile"],["goals","Monthly Goals"],["writing","Writing Style"],["display","Display"]].map(([t,label]) => (
-              <button key={t} onClick={()=>setTab(t)} style={{ padding:"8px 16px", border:"none", borderBottom:`2px solid ${tab===t?accentTab:"transparent"}`, background:"none", fontSize:13, fontWeight:tab===t?700:500, color:tab===t?accentTab:tabInactive, cursor:"pointer", transition:"all 0.15s" }}>
+          <div style={{ display:"flex", gap:0, flexWrap:"wrap" }}>
+            {[["profile","Profile"],["goals","Monthly Goals"],["strategy","Business Goals"],["writing","Writing Style"],["display","Display"]].map(([t,label]) => (
+              <button key={t} onClick={()=>setTab(t)} style={{ padding:"8px 12px", border:"none", borderBottom:`2px solid ${tab===t?accentTab:"transparent"}`, background:"none", fontSize:12.5, fontWeight:tab===t?700:500, color:tab===t?accentTab:tabInactive, cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap" }}>
                 {label}
               </button>
             ))}
@@ -190,6 +193,36 @@ export default function AccountModal({ user, onUpdate, goals, setGoals, writingS
                         style={{ width:28, height:28, borderRadius:8, border:`1px solid ${borderInp}`, background:cardBg, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:textSec, fontWeight:700 }}>+</button>
                       <span style={{ fontSize:11, color:textDim, width:60 }}>/ month</span>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "strategy" && (
+            <div>
+              <p style={{ fontSize:13, color:textMut, margin:"0 0 6px" }}>
+                What is each website's blog actually <strong>for</strong>? These goals steer everything: which keywords score as opportunities, which article angles Claude suggests, and what call to action every article drives toward.
+              </p>
+              <p style={{ fontSize:11.5, color:textDim, margin:"0 0 16px" }}>
+                Saved to your shared workspace (Supabase), so they apply on every device.
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                {Object.values(PROPS).map(pr => (
+                  <div key={pr.id} style={{ padding:"14px 16px", background:panelBg, borderRadius:12, border:`1px solid ${borderC}` }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                      <img src={LOGOS[pr.id]} alt={pr.short} style={{ width:28, height:28, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                      <div style={{ fontSize:13, fontWeight:700, color:textPri }}>{pr.name}</div>
+                    </div>
+                    <textarea
+                      value={localBizGoals[pr.id] || ""}
+                      onChange={e => setLocalBizGoals(g => ({ ...g, [pr.id]: e.target.value }))}
+                      placeholder={GOAL_PLACEHOLDER}
+                      rows={3}
+                      style={{ width:"100%", padding:"10px 12px", border:`1.5px solid ${borderInp}`, borderRadius:9, fontSize:12.5, color:textPri, outline:"none", resize:"vertical", fontFamily:"inherit", lineHeight:1.5, background:inpBg }}
+                      onFocus={e=>e.target.style.borderColor="#A855F7"}
+                      onBlur={e=>e.target.style.borderColor=borderInp}
+                    />
                   </div>
                 ))}
               </div>

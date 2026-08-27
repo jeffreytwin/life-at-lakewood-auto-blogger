@@ -1,4 +1,11 @@
+const STAGE_STYLE = {
+  Awareness:     { bg: "#EFF6FF", tx: "#1D4ED8" },
+  Consideration: { bg: "#FEF3C7", tx: "#92400E" },
+  Decision:      { bg: "#F0FDF4", tx: "#15803D" },
+};
+
 export default function SuggestionCard({ s, isSelected, onSelect, prop }) {
+  const stage = STAGE_STYLE[s.funnelStage];
   return (
     <div
       onClick={onSelect}
@@ -30,11 +37,22 @@ export default function SuggestionCard({ s, isSelected, onSelect, prop }) {
           {s.title}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+          {stage && (
+            <span title="Buyer funnel stage this article targets" style={{ fontSize: 11, fontWeight: 700, color: stage.tx, background: stage.bg, padding: "2px 10px", borderRadius: 20 }}>
+              {s.funnelStage}
+            </span>
+          )}
           <span style={{ fontSize: 11, fontWeight: 700, color: "#6B7280", background: "#F3F4F6", padding: "2px 10px", borderRadius: 20 }}>
             {s.angle}
           </span>
         </div>
         <p style={{ fontSize: 12, color: "#6B7280", margin: 0, lineHeight: 1.6 }}>{s.why}</p>
+        {s.cta && (
+          <div style={{ fontSize: 11.5, color: "#374151", marginTop: 8, display: "flex", gap: 6, alignItems: "baseline" }}>
+            <span style={{ fontWeight: 800, color: prop.accent, flexShrink: 0 }}>CTA →</span>
+            <span>{s.cta}</span>
+          </div>
+        )}
       </div>
     </div>
   );

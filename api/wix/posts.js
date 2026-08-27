@@ -114,6 +114,30 @@ function mapDraftPost(wixDraft, propertyId) {
   };
 }
 
+// Build a RICOS IMAGE node from an image uploaded to the Wix Media Manager
+// via /api/wix/media ({ wixId, width, height, alt, caption }).
+function imageNode(image) {
+  const node = {
+    type: "IMAGE",
+    imageData: {
+      containerData: { width: { size: "CONTENT" }, alignment: "CENTER" },
+      image: {
+        src: { id: image.wixId },
+        width: image.width || 1200,
+        height: image.height || 800,
+      },
+      ...(image.alt ? { altText: image.alt } : {}),
+    },
+  };
+  if (image.caption) {
+    node.nodes = [{
+      type: "CAPTION",
+      nodes: [{ type: "TEXT", textData: { text: image.caption, decorations: [] } }],
+    }];
+  }
+  return node;
+}
+
 // Convert article sections to Wix rich content (RICOS format)
 function sectionsToRichContent(sections) {
   const nodes = [];
@@ -129,6 +153,12 @@ function sectionsToRichContent(sections) {
           textData: { text: section.heading },
         }],
       });
+    }
+
+    // Section image (already uploaded to the Wix Media Manager) goes between
+    // the heading and the body text
+    if (section.image && section.image.wixId) {
+      nodes.push(imageNode(section.image));
     }
 
     // Add body paragraphs
@@ -234,7 +264,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "WIX_API_KEY not configured" });
     }
 
-    const { propertyId, title, sections, seoTitle, metaDescription, slug } = req.body;
+    const { propertyId, title, sections, seoTitle, metaDescription, slug, coverImage } = req.body;
 
     if (!propertyId || !SITES[propertyId]) {
       return res.status(400).json({ error: "Invalid propertyId" });
@@ -271,6 +301,15 @@ export default async function handler(req, res) {
         excerpt: metaDescription || "",
         ...(memberId ? { memberId } : {}),
       };
+
+      // Cover image (must already be in the Wix Media Manager)
+      if (coverImage && coverImage.wixId) {
+        draftPost.media = {
+          wixMedia: { image: { id: coverImage.wixId } },
+          displayed: true,
+          custom: true,
+        };
+      }
 
       // Add slug if provided
       if (slug) {

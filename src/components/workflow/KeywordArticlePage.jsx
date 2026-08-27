@@ -1,58 +1,44 @@
 import { useState } from "react";
 import SuggestionCard from "./SuggestionCard";
+import { fetchSuggestionsForKeyword } from "../../services/api";
 
-async function fetchSuggestionsForKeyword(keyword, location, count = 4, existingTitles = []) {
-  const avoid = existingTitles.length > 0
-    ? `Do NOT suggest any of these titles (already shown): ${existingTitles.join("; ")}.`
-    : "";
-  const prompt = `You are an SEO content strategist for a real estate team focused on ${location}, Florida.
-Generate exactly ${count} DIFFERENT blog article ideas targeting the keyword: "${keyword}"
-${avoid}
-Each article should help prospective home buyers or people relocating to ${location} find the site.
-Give each idea a meaningfully different angle — vary the format (guide, comparison, listicle, local insider, Q&A, myth-busting, etc).
-
-Respond ONLY with a JSON array (no markdown, no backticks, no explanation):
-[
-  {
-    "title": "compelling SEO article title",
-    "angle": "one sentence — the specific hook or format that makes this distinct",
-    "why": "2 sentences — why this will rank and convert for ${location} real estate buyers"
-  }
-]`;
-
-  const res = await fetch("/api/claude/articles", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, keyword })
-  });
-  const data = await res.json();
-  return data.suggestions.map((s, i) => ({ ...s, kw: keyword, id: `${keyword}_${Date.now()}_${i}` }));
-}
-
-export default function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, onConfirm, onBack, onSkip, existingChoice }) {
+export default function KeywordArticlePage({ keyword, location, prop, kwIndex, totalKws, businessGoals = "", publishedTitles = [], onConfirm, onBack, onSkip, existingChoice }) {
   const BATCH = 4;
+  // keyword is an object: { kw, vol, diff, cpc, intent, position, opp, sources }
+  const kwObj = typeof keyword === "string" ? { kw: keyword } : keyword;
+
   const [suggestions, setSuggestions]   = useState([]);
   const [loading, setLoading]           = useState(false);
   const [loadingMore, setLoadingMore]   = useState(false);
   const [generated, setGenerated]       = useState(false);
+  const [loadErr, setLoadErr]           = useState("");
   const [selected, setSelected]         = useState(existingChoice || null);
   const [shownTitles, setShownTitles]   = useState([]);
   const [extraKw, setExtraKw]           = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [additionalKws, setAdditionalKws] = useState([]);
-  const allKws = [keyword, ...additionalKws];
+  const allKws = [kwObj.kw, ...additionalKws];
 
   const loadSuggestions = async (existing = [], append = false) => {
     if (append) setLoadingMore(true); else setLoading(true);
+    setLoadErr("");
     try {
       const combinedKw = allKws.join(" + ");
-      const batch = await fetchSuggestionsForKeyword(combinedKw, location, BATCH, existing);
+      const batch = await fetchSuggestionsForKeyword({
+        keyword: combinedKw,
+        kwData: additionalKws.length === 0 ? kwObj : null,
+        location,
+        propertyUrl: prop.url,
+        count: BATCH,
+        existingTitles: existing,
+        publishedTitles,
+        businessGoals,
+      });
       setSuggestions(prev => append ? [...prev, ...batch] : batch);
       setShownTitles(prev => [...prev, ...batch.map(s => s.title)]);
       if (!append) setGenerated(true);
     } catch (e) {
-      if (!append) setSuggestions([{ id:"err", title:`Could not load suggestions`, kw:keyword, angle:"Check your connection and try again.", why:"", words:1200 }]);
-      if (!append) setGenerated(true);
+      setLoadErr(e.message);
     }
     if (append) setLoadingMore(false); else setLoading(false);
   };
@@ -80,6 +66,13 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
   const isLast = kwIndex === totalKws - 1;
   const canConfirm = !!selected;
 
+  const statChips = [
+    kwObj.vol != null && { label: `${kwObj.vol.toLocaleString()}/mo searches`, title: "Monthly search volume (SEMrush)" },
+    kwObj.diff != null && { label: `Difficulty ${kwObj.diff}`, title: "Keyword difficulty 0-100 (SEMrush)" },
+    kwObj.position != null && { label: `You rank #${Math.round(kwObj.position)}`, title: "Current Google position (GSC)" },
+    kwObj.intent && { label: kwObj.intent, title: "Search intent" },
+  ].filter(Boolean);
+
   return (
     <div>
       {/* Keyword header */}
@@ -98,9 +91,9 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
         </h2>
 
         {/* Keywords for this slot */}
-        <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:12 }}>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:8 }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: prop.color, background: prop.light, padding: "5px 14px", borderRadius: 20 }}>
-            🎯 {keyword}
+            🎯 {kwObj.kw}
           </span>
           {additionalKws.map(kw => (
             <span key={kw} style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize: 12, fontWeight: 700, color: prop.color, background: prop.light+"CC", padding: "4px 10px 4px 14px", borderRadius: 20 }}>
@@ -111,6 +104,17 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
             </span>
           ))}
         </div>
+
+        {/* Real keyword stats */}
+        {statChips.length > 0 && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:12 }}>
+            {statChips.map((c) => (
+              <span key={c.label} title={c.title} style={{ fontSize:10.5, fontWeight:700, color:"#374151", background:"#F3F4F6", padding:"3px 10px", borderRadius:12 }}>
+                {c.label}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Add another keyword */}
         <div style={{ background:"#F9FAFB", borderRadius:10, padding:"12px 14px", marginBottom: generated ? 20 : 0 }}>
@@ -142,16 +146,26 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
         </div>
       </div>
 
+      {/* Error banner */}
+      {loadErr && (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, padding:"12px 16px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:12, marginBottom:16 }}>
+          <div style={{ fontSize:12, color:"#B91C1C", fontWeight:600 }}>⚠ Could not load suggestions: {loadErr}</div>
+          <button onClick={() => loadSuggestions(shownTitles, generated)} style={{ padding:"7px 14px", background:"#B91C1C", color:"#fff", border:"none", borderRadius:8, fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Not yet generated */}
       {!generated && !loading && (
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, padding:"32px 24px", background:"#fff", border:"1.5px dashed #E5E7EB", borderRadius:14, marginBottom:20, textAlign:"center" }}>
           <div style={{ fontSize:32 }}>✨</div>
           <div>
             <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:700, color:"#111827", marginBottom:6 }}>
-              Ready to generate article ideas for{allKws.length > 1 ? ` ${allKws.length} keywords` : ` "${keyword}"`}?
+              Ready to generate article ideas for{allKws.length > 1 ? ` ${allKws.length} keywords` : ` "${kwObj.kw}"`}?
             </div>
             <div style={{ fontSize:12, color:"#9CA3AF" }}>
-              Claude will suggest {BATCH} different angles based on {allKws.length > 1 ? "your combined keywords" : "this keyword"}.
+              Claude will suggest {BATCH} angles based on your business goals{publishedTitles.length ? `, ${publishedTitles.length} published articles,` : ""} and real keyword data.
             </div>
           </div>
           <div style={{ display:"flex", gap:10 }}>
@@ -181,7 +195,7 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
             </div>
           ))}
           <div style={{ fontSize: 12, color: "#9CA3AF", textAlign: "center", marginTop: 4 }}>
-            Claude is generating {BATCH} angles for {allKws.length > 1 ? `"${allKws[0]}" + ${allKws.length-1} more` : `"${keyword}"`}…
+            Claude is weighing angles against your business goals for {allKws.length > 1 ? `"${allKws[0]}" + ${allKws.length-1} more` : `"${kwObj.kw}"`}…
           </div>
         </div>
       )}
@@ -218,7 +232,7 @@ export default function KeywordArticlePage({ keyword, location, prop, kwIndex, t
           {generated && (
             <>
               {selected && <span style={{ fontSize: 12, color: prop.accent, fontWeight: 700 }}>✓ "{selected.title.slice(0, 38)}{selected.title.length > 38 ? "…" : ""}"</span>}
-              <button onClick={() => onConfirm(selected, keyword)} disabled={!canConfirm}
+              <button onClick={() => onConfirm(selected, kwObj)} disabled={!canConfirm}
                 style={{ padding: "11px 28px", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 800, background: canConfirm ? prop.color : "#E5E7EB", color: canConfirm ? "#fff" : "#9CA3AF", cursor: canConfirm ? "pointer" : "not-allowed" }}>
                 {isLast ? "Confirm & Write Articles →" : "Next Keyword →"}
               </button>
