@@ -1,15 +1,114 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import useMobile from "../../hooks/useMobile";
+import { requestRevision, uploadWixMedia, createWixDraft } from "../../services/api";
 
-export default function StepPreviewEdit({ prop, articles, initialContents, onApprove, onBack }) {
+// Resize + compress an image file in the browser so uploads stay small
+// (Wix hosts the final file; ~1600px wide JPEG is plenty for a blog).
+function compressImage(file, maxW = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read the image file"));
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Not a valid image file"));
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        // PNGs with transparency stay PNG; photos become JPEG
+        const isPng = file.type === "image/png";
+        const dataUrl = isPng ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", quality);
+        resolve({ dataUrl, width: w, height: h });
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function slugifyFileName(title, suffix) {
+  const base = (title || "image").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+  return `${base}-${suffix}.jpg`;
+}
+
+// Small image attachment editor used for both cover and section images
+function ImageSlot({ image, onSet, onUpdate, onRemove, label, accent, compact = false }) {
+  const inputRef = useRef(null);
+  const [err, setErr] = useState("");
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setErr("");
+    try {
+      const { dataUrl, width, height } = await compressImage(file);
+      onSet({ dataUrl, width, height, alt: "", caption: "", wixId: null, url: null });
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  };
+
+  if (!image) {
+    return (
+      <div>
+        <button onClick={() => inputRef.current?.click()}
+          style={{ display:"inline-flex", alignItems:"center", gap:6, padding: compact ? "5px 12px" : "8px 16px", background:"#F9FAFB", border:"1.5px dashed #D1D5DB", borderRadius:8, fontSize:11.5, fontWeight:700, color:"#6B7280", cursor:"pointer" }}>
+          🖼️ {label}
+        </button>
+        <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display:"none" }} />
+        {err && <div style={{ fontSize:11, color:"#DC2626", marginTop:4 }}>{err}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display:"flex", gap:12, padding:"10px", background:"#F9FAFB", borderRadius:10, border:"1px solid #E5E7EB", alignItems:"flex-start" }}>
+      <img src={image.url || image.dataUrl} alt={image.alt || ""} style={{ width:110, height:74, objectFit:"cover", borderRadius:8, flexShrink:0, background:"#E5E7EB" }} />
+      <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+        <input
+          value={image.alt || ""}
+          onChange={(e) => onUpdate({ ...image, alt: e.target.value })}
+          placeholder="Alt text (describe the image for SEO & accessibility)"
+          style={{ width:"100%", padding:"6px 10px", border:"1px solid #E5E7EB", borderRadius:7, fontSize:12, color:"#111827", outline:"none", background:"#fff" }}
+        />
+        <input
+          value={image.caption || ""}
+          onChange={(e) => onUpdate({ ...image, caption: e.target.value })}
+          placeholder="Caption (optional, shown under the image)"
+          style={{ width:"100%", padding:"6px 10px", border:"1px solid #E5E7EB", borderRadius:7, fontSize:12, color:"#111827", outline:"none", background:"#fff" }}
+        />
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {image.wixId
+            ? <span style={{ fontSize:10, fontWeight:700, color:"#15803D", background:"#F0FDF4", padding:"2px 8px", borderRadius:6 }}>✓ In Wix Media Manager</span>
+            : <span style={{ fontSize:10, fontWeight:700, color:"#92400E", background:"#FFFBEB", padding:"2px 8px", borderRadius:6 }}>Uploads to Wix on send</span>
+          }
+          <button onClick={() => inputRef.current?.click()} style={{ fontSize:10.5, fontWeight:700, color:accent, background:"none", border:"none", cursor:"pointer", padding:0 }}>Replace</button>
+          <button onClick={onRemove} style={{ fontSize:10.5, fontWeight:700, color:"#DC2626", background:"none", border:"none", cursor:"pointer", padding:0 }}>Remove</button>
+        </div>
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display:"none" }} />
+    </div>
+  );
+}
+
+export default function StepPreviewEdit({ prop, articles, initialContents, writingStyle = "", onApprove, onBack }) {
   const mob = useMobile();
   const [activeIndex, setActiveIndex] = useState(0);
   const [articleContents, setArticleContents] = useState(() => initialContents || []);
   const [revisionInput, setRevisionInput] = useState("");
   const [revising, setRevising] = useState(false);
+  const [reviseErr, setReviseErr] = useState("");
   const [revisionHistory, setRevisionHistory] = useState(() => articles.map(() => []));
   const [approvedSet, setApprovedSet] = useState(new Set());
-  const [pushingToWix, setPushingToWix] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [pushStatus, setPushStatus] = useState("");
+  // Per-article push outcome: { success: bool, error?: string }
+  const [pushResults, setPushResults] = useState(() => articles.map(() => null));
 
   const content = articleContents[activeIndex];
   const article = articles[activeIndex];
@@ -34,49 +133,46 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
     });
   };
 
+  const setSectionImage = (secIdx, image) => handleSectionEdit(secIdx, "image", image);
+  const setCoverImage = (image) => handleMetaEdit("coverImage", image);
+
   const handleRequestRevision = async () => {
     if (!revisionInput.trim() || revising) return;
     setRevising(true);
-    const newHistory = [...revisionHistory];
-    newHistory[activeIndex] = [...(newHistory[activeIndex] || []), revisionInput.trim()];
-    setRevisionHistory(newHistory);
+    setReviseErr("");
+    const req = revisionInput.trim();
 
     try {
-      const res = await fetch("/api/claude/revise", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          articleContent: articleContents[activeIndex],
-          revisionRequest: revisionInput.trim(),
-          property: prop.short,
+      const current = articleContents[activeIndex];
+      const revised = await requestRevision(current, req, prop, writingStyle);
+
+      // Re-attach images the model never saw: match sections by heading, then by index
+      const withImages = {
+        ...revised,
+        coverImage: current.coverImage || null,
+        sections: (revised.sections || []).map((sec, idx) => {
+          const byHeading = (current.sections || []).find(
+            (p) => p.image && p.heading && sec.heading && p.heading.trim().toLowerCase() === sec.heading.trim().toLowerCase()
+          );
+          const src = byHeading || ((current.sections || [])[idx]?.image ? current.sections[idx] : null);
+          return src?.image ? { ...sec, image: src.image } : sec;
         }),
-      });
-      if (res.ok) {
-        const revised = await res.json();
-        setArticleContents(prev => {
-          const updated = [...prev];
-          updated[activeIndex] = revised;
-          return updated;
-        });
-      } else {
-        throw new Error("Revision failed");
-      }
-    } catch (e) {
-      // Fallback: append a note so user knows revision was requested
+      };
+
       setArticleContents(prev => {
         const updated = [...prev];
-        const c = { ...updated[activeIndex] };
-        const secs = [...c.sections];
-        const lastSec = { ...secs[secs.length - 1] };
-        lastSec.body = lastSec.body + `\n\n[Revision requested: "${revisionInput.trim()}" — API unavailable, please edit manually]`;
-        secs[secs.length - 1] = lastSec;
-        c.sections = secs;
-        updated[activeIndex] = c;
+        updated[activeIndex] = withImages;
         return updated;
       });
+      setRevisionHistory(prev => {
+        const n = [...prev];
+        n[activeIndex] = [...(n[activeIndex] || []), req];
+        return n;
+      });
+      setRevisionInput("");
+    } catch (e) {
+      setReviseErr(e.message);
     }
-
-    setRevisionInput("");
     setRevising(false);
   };
 
@@ -86,42 +182,87 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
 
   const allApproved = approvedSet.size === articles.length;
 
-  const handleSendToWix = async () => {
-    setPushingToWix(true);
-    try {
-      // Push each article to Wix as a draft
-      await Promise.all(
-        articles.map((article, i) => {
-          const content = articleContents[i];
-          return fetch("/api/wix/posts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              propertyId: prop.id,
-              title: article.title,
-              sections: content.sections,
-              seoTitle: content.seoTitle,
-              metaDescription: content.metaDescription,
-              slug: content.slug,
-            }),
-          });
-        })
-      );
-    } catch (err) {
-      console.warn("Wix push error (proceeding anyway):", err.message);
-    }
-    setPushingToWix(false);
-    onApprove(articleContents);
+  // Upload one image to the Wix Media Manager if it isn't there yet.
+  // Returns the updated image object (with wixId/url set).
+  const ensureUploaded = async (image, fileName) => {
+    if (!image || image.wixId) return image;
+    const result = await uploadWixMedia({ propertyId: prop.id, fileName, dataUrl: image.dataUrl });
+    if (!result.id) throw new Error("Wix did not return a media id for the uploaded image");
+    return { ...image, wixId: result.id, url: result.url || null };
   };
 
-  if (pushingToWix) {
+  const handleSendToWix = async () => {
+    setPushing(true);
+    const results = [...pushResults];
+    const contents = [...articleContents];
+
+    for (let i = 0; i < articles.length; i++) {
+      if (results[i]?.success) continue; // already pushed in a previous attempt
+      const art = articles[i];
+      let c = { ...contents[i] };
+      try {
+        // 1. Upload cover + section images to the Wix Media Manager
+        const imgCount = (c.coverImage ? 1 : 0) + (c.sections || []).filter(s => s.image).length;
+        let uploaded = 0;
+        const tick = () => { uploaded++; setPushStatus(`Article ${i + 1}/${articles.length}: uploading image ${uploaded}/${imgCount}…`); };
+
+        if (c.coverImage) {
+          setPushStatus(`Article ${i + 1}/${articles.length}: uploading image 1/${imgCount}…`);
+          c.coverImage = await ensureUploaded(c.coverImage, slugifyFileName(c.slug || art.title, "cover"));
+          tick();
+        }
+        const secs = [...(c.sections || [])];
+        for (let s = 0; s < secs.length; s++) {
+          if (secs[s].image) {
+            setPushStatus(`Article ${i + 1}/${articles.length}: uploading image ${uploaded + 1}/${imgCount}…`);
+            secs[s] = { ...secs[s], image: await ensureUploaded(secs[s].image, slugifyFileName(c.slug || art.title, `s${s + 1}`)) };
+            tick();
+          }
+        }
+        c.sections = secs;
+        contents[i] = c;
+        // Persist uploaded ids immediately so a failed draft push doesn't re-upload
+        setArticleContents([...contents]);
+
+        // 2. Create the draft post with images embedded in the rich content
+        setPushStatus(`Article ${i + 1}/${articles.length}: creating Wix draft…`);
+        await createWixDraft({
+          propertyId: prop.id,
+          title: art.title,
+          sections: c.sections.map(({ heading, body, image }) => ({
+            heading,
+            body,
+            ...(image?.wixId ? { image: { wixId: image.wixId, width: image.width, height: image.height, alt: image.alt, caption: image.caption } } : {}),
+          })),
+          seoTitle: c.seoTitle,
+          metaDescription: c.metaDescription,
+          slug: c.slug,
+          ...(c.coverImage?.wixId ? { coverImage: { wixId: c.coverImage.wixId } } : {}),
+        });
+        results[i] = { success: true };
+      } catch (e) {
+        results[i] = { success: false, error: e.message };
+      }
+      setPushResults([...results]);
+    }
+
+    setPushing(false);
+    setPushStatus("");
+    if (results.every(r => r?.success)) {
+      onApprove(contents);
+    }
+  };
+
+  const failedPushes = pushResults.filter(r => r && !r.success).length;
+
+  if (pushing) {
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:350, textAlign:"center" }}>
         <div style={{ width:64, height:64, borderRadius:"50%", background:prop.light, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, marginBottom:20, animation:"pulse 2s ease-in-out infinite" }}>🚀</div>
         <h2 style={{ fontFamily:"'Inter','DM Sans',system-ui,sans-serif", fontWeight:800, fontSize:16, color:prop.accent, margin:"0 0 8px" }}>
-          Pushing to Wix Drafts…
+          Pushing to Wix…
         </h2>
-        <p style={{ fontSize:13, color:"#6B7280" }}>Formatting and sending {articles.length} article{articles.length>1?"s":""} to your Wix blog draft queue.</p>
+        <p style={{ fontSize:13, color:"#6B7280" }}>{pushStatus || `Formatting and sending ${articles.length} article${articles.length>1?"s":""} to Wix.`}</p>
         <div style={{ width:200, height:6, background:"#E5E7EB", borderRadius:3, overflow:"hidden", marginTop:20 }}>
           <div style={{ width:"70%", height:"100%", background:`linear-gradient(90deg,${prop.color},${prop.accent})`, borderRadius:3, animation:"indeterminate 1.5s ease-in-out infinite" }} />
         </div>
@@ -137,9 +278,24 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
           Preview & Edit
         </h2>
         <p style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#6B7280", margin:0 }}>
-          Review each article before sending to Wix. Edit directly, or request AI-powered revisions.
+          Review each article before sending to Wix. Add photos, edit directly, or request AI-powered revisions. Images are uploaded into the Wix Media Manager so Wix hosts them.
         </p>
       </div>
+
+      {/* Push failure banner */}
+      {failedPushes > 0 && (
+        <div style={{ padding:"12px 16px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:12, marginBottom:16 }}>
+          <div style={{ fontSize:12.5, fontWeight:700, color:"#B91C1C", marginBottom:6 }}>
+            {failedPushes} article{failedPushes>1?"s":""} failed to push to Wix — successfully pushed articles won't be duplicated if you retry:
+          </div>
+          {pushResults.map((r, i) => r && !r.success && (
+            <div key={i} style={{ fontSize:11.5, color:"#B91C1C", marginBottom:2 }}>• <strong>{articles[i].title}</strong>: {r.error}</div>
+          ))}
+          <button onClick={handleSendToWix} style={{ marginTop:8, padding:"7px 16px", background:"#B91C1C", color:"#fff", border:"none", borderRadius:8, fontSize:11.5, fontWeight:700, cursor:"pointer" }}>
+            ↻ Retry Failed
+          </button>
+        </div>
+      )}
 
       {/* Article tabs */}
       {articles.length > 1 && (
@@ -193,6 +349,7 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <span style={{ fontSize:11, fontWeight:700, color:prop.color, background:prop.light, padding:"2px 10px", borderRadius:20 }}>🎯 {article.kw}</span>
               <span style={{ fontSize:11, color:"#6B7280" }}>✍️ {content && content.sections ? content.sections.reduce((sum, sec) => sum + (sec.heading ? sec.heading.split(/\s+/).filter(Boolean).length : 0) + (sec.body ? sec.body.split(/\s+/).filter(Boolean).length : 0), 0).toLocaleString() : "—"} words</span>
+              <span style={{ fontSize:11, color:"#6B7280" }}>🖼️ {(content?.coverImage ? 1 : 0) + (content?.sections || []).filter(s => s.image).length} image{((content?.coverImage ? 1 : 0) + (content?.sections || []).filter(s => s.image).length) === 1 ? "" : "s"}</span>
             </div>
           </div>
           {approvedSet.has(activeIndex)
@@ -206,6 +363,19 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
                 Approve Article
               </button>
           }
+        </div>
+
+        {/* Cover image */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:10, fontWeight:700, color:"#9CA3AF", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:8 }}>Cover Image</div>
+          <ImageSlot
+            image={content.coverImage || null}
+            onSet={setCoverImage}
+            onUpdate={setCoverImage}
+            onRemove={() => setCoverImage(null)}
+            label="Add cover image"
+            accent={prop.accent}
+          />
         </div>
 
         {/* SEO Meta */}
@@ -243,6 +413,17 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
             <input value={sec.heading} onChange={e => handleSectionEdit(si, "heading", e.target.value)}
               style={{ width:"100%", padding:"6px 0", border:"none", borderBottom:"1px solid #F3F4F6", fontSize:14, fontWeight:700, color:"#111827", outline:"none", background:"transparent", marginBottom:8 }}
               onFocus={e=>e.target.style.borderBottomColor=prop.accent} onBlur={e=>e.target.style.borderBottomColor="#F3F4F6"} />
+            <div style={{ marginBottom:8 }}>
+              <ImageSlot
+                image={sec.image || null}
+                onSet={(img) => setSectionImage(si, img)}
+                onUpdate={(img) => setSectionImage(si, img)}
+                onRemove={() => setSectionImage(si, null)}
+                label="Add image to this section"
+                accent={prop.accent}
+                compact
+              />
+            </div>
             <textarea value={sec.body} onChange={e => handleSectionEdit(si, "body", e.target.value)}
               rows={Math.max(4, Math.ceil(sec.body.length / 90))}
               style={{ width:"100%", padding:"8px 0", border:"none", fontSize:13, color:"#374151", outline:"none", resize:"vertical", lineHeight:1.7, background:"transparent", fontFamily:"inherit" }} />
@@ -256,7 +437,7 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
             <span style={{ fontSize:12, fontWeight:700, color:"#92400E" }}>Request AI Revision</span>
           </div>
           <p style={{ fontSize:11, color:"#92400E", margin:"0 0 10px", opacity:0.8 }}>
-            Describe what you'd like changed — tone, length, specific sections, added details, etc.
+            Describe what you'd like changed — tone, length, specific sections, added details, etc. Your images stay attached.
           </p>
           <div style={{ display:"flex", gap:8 }}>
             <textarea value={revisionInput} onChange={e => setRevisionInput(e.target.value)}
@@ -269,6 +450,11 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
               {revising ? "Revising…" : "Revise ✨"}
             </button>
           </div>
+          {reviseErr && (
+            <div style={{ marginTop:8, fontSize:11.5, color:"#B91C1C", fontWeight:600 }}>
+              ⚠ Revision failed: {reviseErr}
+            </div>
+          )}
           {revisionHistory[activeIndex] && revisionHistory[activeIndex].length > 0 && (
             <div style={{ marginTop:10, borderTop:"1px solid #FDE68A", paddingTop:8 }}>
               <div style={{ fontSize:10, fontWeight:700, color:"#B45309", marginBottom:4 }}>Revision History</div>
@@ -302,4 +488,3 @@ export default function StepPreviewEdit({ prop, articles, initialContents, onApp
     </div>
   );
 }
-

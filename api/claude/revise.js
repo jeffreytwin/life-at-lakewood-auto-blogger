@@ -1,61 +1,79 @@
 // Vercel serverless function: POST /api/claude/revise
-// Revises an existing article based on user feedback
+// Revises an existing article based on user feedback.
+
+import { getClient, callClaudeJSON, sendClaudeError, MODEL } from "./_lib.js";
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    seoTitle: { type: "string" },
+    metaDescription: { type: "string" },
+    slug: { type: "string" },
+    sections: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          heading: { type: "string" },
+          body: { type: "string" },
+        },
+        required: ["heading", "body"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["seoTitle", "metaDescription", "slug", "sections"],
+  additionalProperties: false,
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { articleContent, revisionRequest, property } = req.body;
+  const { articleContent, revisionRequest, property, writingStyle = "" } = req.body || {};
   if (!articleContent || !revisionRequest) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
+  // Images attached to sections are re-attached client-side after revision —
+  // strip them here so the model only sees text.
+  const textOnly = {
+    ...articleContent,
+    sections: (articleContent.sections || []).map(({ heading, body }) => ({ heading, body })),
+  };
+
+  const styleBlock = writingStyle
+    ? `\nKeep following these writing style preferences:\n${writingStyle}\n`
+    : "";
+
   const prompt = `You are an expert SEO blog editor for a real estate website about ${property}, Florida.
 
 Here is the current article content as JSON:
-${JSON.stringify(articleContent, null, 2)}
+${JSON.stringify(textOnly, null, 2)}
 
 The user has requested the following revision:
 "${revisionRequest}"
-
+${styleBlock}
 Apply the requested changes while maintaining:
-- SEO best practices
-- Natural keyword placement
+- SEO best practices and natural keyword placement
 - Professional, conversational tone
-- Factual accuracy
+- Factual accuracy — do not invent precise numbers
+- seoTitle under 60 characters, metaDescription under 160 characters
 
-Respond ONLY with the complete revised article as valid JSON (same structure as input, no markdown, no backticks):
-{
-  "seoTitle": "...",
-  "metaDescription": "...",
-  "slug": "...",
-  "sections": [...]
-}`;
+Return the complete revised article. Keep sections the user didn't ask to change as close to the original as possible.`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const client = getClient();
+    const revised = await callClaudeJSON({
+      client,
+      prompt,
+      schema: SCHEMA,
+      maxTokens: 16000,
     });
 
-    const data = await response.json();
-    const text = data.content?.map((b) => b.text || "").join("") || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const revised = JSON.parse(clean);
-
-    res.status(200).json(revised);
+    res.status(200).json({ ...revised, model: MODEL });
   } catch (error) {
-    console.error("Claude revise error:", error);
-    res.status(500).json({ error: "Failed to revise article" });
+    sendClaudeError(res, error, "Claude revise");
   }
 }

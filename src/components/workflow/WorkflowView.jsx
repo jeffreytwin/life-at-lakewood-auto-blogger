@@ -23,10 +23,29 @@ function loadWorkflowState(propId) {
   return null;
 }
 
+// Drop base64 image previews from saved content (they can exceed the
+// localStorage quota) — uploaded Wix ids/urls are kept.
+function stripImageData(contents) {
+  if (!contents) return contents;
+  return contents.map((c) => c && ({
+    ...c,
+    coverImage: c.coverImage ? { ...c.coverImage, dataUrl: null } : c.coverImage,
+    sections: (c.sections || []).map((s) => (s.image ? { ...s, image: { ...s.image, dataUrl: null } } : s)),
+  }));
+}
+
 function saveWorkflowState(propId, state) {
   try {
     localStorage.setItem(STORAGE_KEY_PREFIX + propId, JSON.stringify(state));
-  } catch {}
+  } catch {
+    // Quota exceeded — retry without inline image data
+    try {
+      localStorage.setItem(
+        STORAGE_KEY_PREFIX + propId,
+        JSON.stringify({ ...state, generatedContents: stripImageData(state.generatedContents) })
+      );
+    } catch {}
+  }
 }
 
 function clearWorkflowState(propId) {
@@ -35,7 +54,12 @@ function clearWorkflowState(propId) {
   } catch {}
 }
 
-export default function WorkflowView({ prop, articles: allArticles = [], onBack, dm=false, bg="#F2F1ED", viewStr="", mob=false, writingStyle="", onRefreshArticles }) {
+export default function WorkflowView({ prop, articles: allArticles = [], onBack, dm=false, bg="#F2F1ED", viewStr="", mob=false, writingStyle="", businessGoals="", onRefreshArticles }) {
+  // What this property has already published — used to avoid cannibalizing
+  // existing content and to suggest internal links
+  const publishedTitles = allArticles
+    .filter(a => a.p === prop.id && a.status === "published" && a.title)
+    .map(a => a.title);
   // Detect direct-review entry (from "Needs Attention" button)
   const directReviewMatch = viewStr.match(/__review__(.+)/);
   const directReviewArticleId = directReviewMatch ? directReviewMatch[1] : null;
@@ -73,10 +97,13 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
     setShowResumeBar(false);
   };
 
-  // Called when user confirms their pick for keyword at kwPageIndex
+  // Called when user confirms their pick for keyword at kwPageIndex.
+  // activeKw is a keyword object ({ kw, vol, diff, intent, position, ... }).
   const handleArticleConfirm = (article, activeKw) => {
     const updated = [...chosenArticles];
-    updated[kwPageIndex] = { ...article, kw: activeKw };
+    const kwStr = typeof activeKw === "string" ? activeKw : activeKw.kw;
+    const kwData = typeof activeKw === "string" ? null : activeKw;
+    updated[kwPageIndex] = { ...article, kw: kwStr, kwData };
     setChosenArticles(updated);
 
     if (kwPageIndex < selectedKeywords.length - 1) {
@@ -153,7 +180,7 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
 
       {!mob && <StepBar step={stepBarStep} prop={prop} kwIndex={kwPageIndex} totalKws={selectedKeywords.length} mob={mob} />}
 
-      {step === 0 && <StepKeywords prop={prop} onNext={handleKeywordsNext} />}
+      {step === 0 && <StepKeywords prop={prop} onNext={handleKeywordsNext} businessGoals={businessGoals} />}
 
       {step === 1 && selectedKeywords.length > 0 && (
         <KeywordArticlePage
@@ -163,6 +190,8 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
           prop={prop}
           kwIndex={kwPageIndex}
           totalKws={selectedKeywords.length}
+          businessGoals={businessGoals}
+          publishedTitles={publishedTitles}
           onConfirm={handleArticleConfirm}
           onBack={handleArticleBack}
           onSkip={() => {
@@ -180,8 +209,8 @@ export default function WorkflowView({ prop, articles: allArticles = [], onBack,
         />
       )}
 
-      {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} articles={chosenArticles} writingStyle={writingStyle} onDone={(contents) => { setGeneratedContents(contents); setStep(3); }} />}
-      {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} initialContents={generatedContents} onApprove={(contents) => { setGeneratedContents(contents); setStep(4); if (onRefreshArticles) onRefreshArticles(); }} onBack={() => { setGeneratedContents(null); setStep(2); }} />}
+      {step === 2 && <StepGenerating prop={prop} count={chosenArticles.length} articles={chosenArticles} writingStyle={writingStyle} businessGoals={businessGoals} publishedTitles={publishedTitles} onDone={(contents) => { setGeneratedContents(contents); setStep(3); }} onCancel={() => setStep(0)} />}
+      {step === 3 && <StepPreviewEdit prop={prop} articles={chosenArticles} initialContents={generatedContents} writingStyle={writingStyle} onApprove={(contents) => { setGeneratedContents(contents); setStep(4); if (onRefreshArticles) onRefreshArticles(); }} onBack={() => { setGeneratedContents(null); setStep(2); }} />}
       {step === 4 && <StepReview prop={prop} articles={chosenArticles} generatedContents={generatedContents} allArticles={allArticles} onDone={handleBackToDashboard} onGenerateMore={handleGenerateMore} />}
     </div>
   );

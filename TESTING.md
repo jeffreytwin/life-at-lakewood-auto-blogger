@@ -351,3 +351,38 @@ Test at viewport width < 768px (use browser DevTools device toolbar):
 | `src/data/constants.js` | Month data, date utilities |
 | `src/data/mock-articles.js` | Fallback mock article data |
 | `.env.example` | Environment variable template |
+
+---
+
+## August 2026 Platform Update
+
+### What changed
+
+| Area | Before | Now |
+|------|--------|-----|
+| AI model | `claude-sonnet-4-20250514` (deprecated → API calls failed with a swallowed error) | `claude-opus-5` via the official `@anthropic-ai/sdk`, with structured JSON output (no more parse crashes) |
+| Keyword metrics | Claude invented volume/difficulty numbers | Real volume, difficulty, CPC & intent from **SEMrush**; live rankings from GSC; AI ideas show "—" until validated by SEMrush |
+| Keyword table | Sorted by invented volume | **Opportunity score** (volume + ease + intent value + striking-distance bonus) with per-source badges (GSC / SEMrush / AI) |
+| Article ideas | Generic prompt per keyword | Grounded in per-property **Business Goals** (Account → Business Goals), published Wix articles (anti-cannibalization + internal links), real keyword data, funnel stage + CTA per idea |
+| Errors | Silent failures, fake sample content on API errors | Every failure shows the real cause with a Retry button; generation never substitutes sample content |
+| Images | Not supported | Cover + per-section images in the editor; uploaded into the **Wix Media Manager** (Wix-hosted) and embedded in the draft's rich content with alt text + captions |
+| Settings | localStorage only (per browser) | Business Goals + Writing Style sync via Supabase (`app_settings` table, service-role only) |
+| GSC | Longboat Key returned 403 | Domain-property 403s automatically retry as URL-prefix properties |
+
+### New environment variable (required for SEMrush)
+
+In Vercel → Project → Settings → Environment Variables, add:
+
+```
+SEMRUSH_API_KEY=<your key from semrush.com/api-documentation>
+```
+
+Note: the SEMrush **Analytics API** requires an API-enabled subscription (Business plan) or purchased API units. If your plan doesn't include it, the app shows the exact SEMrush error and everything else keeps working — the key status appears as a chip on the keyword step.
+
+### How to test the new features
+
+1. **Keyword step** — open any property → New Post. Expect: GSC rows with position data, a "SEMrush ✓" chip once synced (cached 24h per property, "Refresh metrics" to force), Opportunity column sorted high→low, source badges per keyword.
+2. **Find keywords** — try all three sources in the dropdown: SEMrush Related, SEMrush Questions, Claude Brainstorm. AI ideas get real SEMrush numbers filled in when the key is configured.
+3. **Business goals** — Account → Business Goals, write one per property, Save. Then generate ideas for a keyword: each card should show a funnel stage and a CTA tied to your goal.
+4. **Images** — in Preview & Edit, add a cover image and a section image, give them alt text, approve, Send to Wix Drafts. Open the draft in Wix: images should live in the Media Manager and appear in the post + as the cover.
+5. **Failure visibility** — temporarily break something (e.g. remove an env var in a preview) and confirm the UI shows the real error instead of sample content.

@@ -1,0 +1,48 @@
+name: Preview API smoke test
+
+# Manually dispatched: pass a Vercel share URL (from "Share" on a protected
+# preview deployment, or the Vercel MCP get_access_to_vercel_url tool). The
+# share link authenticates this runner via cookie, then every /api endpoint
+# on that deployment is exercised and the JSON responses are printed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      share_url:
+        description: "Vercel preview share URL (any path, with _vercel_share=...)"
+        required: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run API smoke checks
+        env:
+          SHARE_URL: ${{ inputs.share_url }}
+        run: |
+          set -u
+          JAR=$(mktemp)
+          BASE=$(echo "$SHARE_URL" | sed -E 's#^(https://[^/]+).*#\1#')
+          echo "Deployment: $BASE"
+
+          echo "::group::Authenticate via share link"
+          curl -sSL -c "$JAR" -b "$JAR" -o /dev/null -w "auth chain final status: %{http_code}\n" "$SHARE_URL"
+          echo "::endgroup::"
+
+          check () {
+            local name="$1"; shift
+            echo "::group::$name"
+            curl -sS -b "$JAR" -w "\nHTTP %{http_code}\n" "$@" | head -c 3000
+            echo ""
+            echo "::endgroup::"
+          }
+
+          check "Claude health (model + API key)" "$BASE/api/claude/keywords?health"
+          check "Claude keyword brainstorm (POST, structured output)" \
+            -X POST -H "Content-Type: application/json" \
+            -d '{"location":"Lakewood Ranch","seeds":["golf communities"],"existing":[],"count":3,"businessGoals":"Generate buyer leads"}' \
+            "$BASE/api/claude/keywords"
+          check "GSC Longboat Key (403 fallback)" "$BASE/api/google/keywords?property=longboat&days=28"
+          check "SEMrush overview" "$BASE/api/semrush/keywords?action=overview&keywords=lakewood%20ranch%20homes%20for%20sale"
+          check "Settings (Supabase)" "$BASE/api/settings"
+          check "Wix posts" "$BASE/api/wix/posts?site=lakewood"
